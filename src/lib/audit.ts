@@ -1,0 +1,2 @@
+import { db } from "./db";
+export async function audit(action:string,entity:string,entityId:string|number|null,actorId?:number|null,before?:unknown,after?:unknown,request?:Request){await db.execute({sql:"INSERT INTO audit_log(id_usuario_actor,accion,entidad,entidad_id,datos_anteriores,datos_nuevos,ip_address,request_id) VALUES (?,?,?,?,?,?,?,?)",args:[actorId??null,action,entity,entityId==null?null:String(entityId),before?JSON.stringify(before):null,after?JSON.stringify(after):null,request?.headers.get("x-forwarded-for")??null,request?.headers.get("x-request-id")??null]})}

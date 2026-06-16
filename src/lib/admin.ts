@@ -1,0 +1,7 @@
+export const resources = {
+  users:{title:"Gestión de Usuarios",table:"usuario",id:"id_usuario",fields:["nombre_usuario","correo","hash_contraseña","nombre","apellido","telefono","direccion","rol","esta_activo"],list:"SELECT id_usuario,nombre_usuario,correo,nombre,apellido,telefono,direccion,rol,esta_activo,fecha_creacion FROM usuario ORDER BY fecha_creacion DESC"},
+  products:{title:"Gestión de Productos",table:"producto",id:"id_producto",fields:["nombre","descripcion","precio","precio_anterior","cantidad_stock","id_categoria","url_imagen","es_destacado","esta_activo"],list:"SELECT p.*,c.nombre categoria FROM producto p LEFT JOIN categoria_producto c ON c.id_categoria=p.id_categoria ORDER BY p.fecha_creacion DESC"},
+  services:{title:"Gestión de Servicios",table:"servicio",id:"id_servicio",fields:["nombre","descripcion","beneficios","duracion_minutos","url_imagen","url_video","esta_activo"],list:"SELECT * FROM servicio ORDER BY fecha_creacion DESC"},
+  plans:{title:"Gestión de Suscripciones",table:"plan_suscripcion",id:"id_plan",fields:["nombre","precio","duracion_dias","descripcion","beneficios","esta_activo"],list:"SELECT * FROM plan_suscripcion ORDER BY precio"},
+  suppliers:{title:"Gestión de Proveedores",table:"proveedor",id:"id_proveedor",fields:["nombre","correo","telefono","direccion","identificador_fiscal","esta_activo"],list:"SELECT * FROM proveedor ORDER BY nombre"}
+} as const;

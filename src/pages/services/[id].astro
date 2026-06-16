@@ -1,0 +1,8 @@
+---
+import Layout from "@/components/Layout.astro"; import Header from "@/components/Header.astro"; import Footer from "@/components/Footer.astro"; import { row, rows } from "@/lib/db"; import { assetUrl } from "@/lib/format";
+if (!Astro.locals.user) return Astro.redirect("/login");
+const service = await row<any>("SELECT * FROM servicio WHERE id_servicio=? AND esta_activo=1", [Number(Astro.params.id)]); if (!service) return Astro.redirect("/#services");
+const access = await row("SELECT 1 FROM suscripcion_usuario s JOIN plan_servicio ps ON ps.id_plan=s.id_plan WHERE s.id_usuario=? AND s.estado='activa' AND date(s.fecha_fin)>=date('now') AND ps.id_servicio=?", [Astro.locals.user.id, service.id_servicio]); if (!access) return Astro.redirect("/#plans");
+const gallery = await rows<any>("SELECT * FROM imagen_servicio WHERE id_servicio=?", [service.id_servicio]);
+---
+<Layout title={`Fit 360 - ${service.nombre}`}><Header /><section class="service-details"><div class="service-hero"><img src={assetUrl(service.url_imagen)} alt={service.nombre} /><div><h1>{service.nombre}</h1><p>{service.descripcion}</p><p><strong>Duración:</strong> {service.duracion_minutos} minutos</p></div></div><video controls src={assetUrl(service.url_video)}></video><div class="benefits-list">{String(service.beneficios).split(/\r?\n/).map((b) => <div class="benefit-item"><i class="bx bx-check"></i><span>{b}</span></div>)}</div><div class="service-gallery">{gallery.map((image) => <img src={assetUrl(image.url_imagen)} alt={service.nombre} />)}</div></section><Footer /></Layout>

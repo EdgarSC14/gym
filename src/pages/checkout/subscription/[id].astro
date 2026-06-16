@@ -1,0 +1,75 @@
+---
+import Layout from "@/components/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import { row } from "@/lib/db";
+import { money } from "@/lib/format";
+
+if (!Astro.locals.user) return Astro.redirect("/login");
+const plan = await row<any>("SELECT * FROM plan_suscripcion WHERE id_plan=? AND esta_activo=1", [Number(Astro.params.id)]);
+if (!plan) return Astro.redirect("/#plans");
+const benefits = String(plan.beneficios || "").split(/\r?\n|,\s*/).map((item) => item.trim()).filter(Boolean);
+---
+<Layout title={`Suscripción ${plan.nombre} | Fit 360`} description={`Checkout privado para contratar la suscripción ${plan.nombre} de Fit 360.`} canonicalPath={`/checkout/subscription/${plan.id_plan}`} noindex>
+  <Header />
+  <section class="checkout-section subscription-checkout" aria-labelledby="subscription-title">
+    <div class="subscription-checkout-shell">
+      <div class="subscription-copy">
+        <p class="section-kicker"><i class="bx bx-badge-check"></i> Suscripción Fit 360</p>
+        <h1 id="subscription-title">Activa el plan {plan.nombre}</h1>
+        <p>{plan.descripcion}</p>
+      </div>
+
+      <div class="subscription-checkout-grid">
+        <article class="subscription-plan-card">
+          <div class="plan-card-topline">
+            <span><i class="bx bx-medal"></i> Plan seleccionado</span>
+            <strong>{plan.duracion_dias} días</strong>
+          </div>
+          <h2>{plan.nombre}</h2>
+          <div class="subscription-price"><strong>{money(plan.precio)}</strong><span>MXN / mes</span></div>
+          <p>{plan.descripcion}</p>
+          <div class="subscription-benefits">
+            <h3>Incluye</h3>
+            <ul>{benefits.map((benefit) => <li><i class="bx bx-check"></i><span>{benefit}</span></li>)}</ul>
+          </div>
+        </article>
+
+        <aside class="subscription-payment-card">
+          <div class="summary-badge"><i class="bx bx-lock-alt"></i> Checkout seguro</div>
+          <h2>Resumen de pago</h2>
+          <div class="summary-row"><span>Plan</span><strong>{plan.nombre}</strong></div>
+          <div class="summary-row"><span>Periodo</span><strong>Mensual</strong></div>
+          <div class="summary-row total"><span>Total hoy</span><strong>{money(plan.precio)}</strong></div>
+          <button class="btn subscription-pay-btn" id="subscribe" type="button"><i class="bx bx-credit-card"></i> Continuar a Stripe</button>
+          <a class="btn-secondary subscription-back" href="/#plans"><i class="bx bx-left-arrow-alt"></i> Cambiar plan</a>
+          <p class="subscription-note"><i class="bx bx-info-circle"></i> La suscripción se activa cuando Stripe confirma el pago. Puedes cancelarla desde tu perfil.</p>
+          <p id="error" class="error-message" hidden></p>
+        </aside>
+      </div>
+    </div>
+  </section>
+  <Footer />
+  <script is:inline define:vars={{ planId: plan.id_plan }}>
+    const button = document.querySelector("#subscribe");
+    const error = document.querySelector("#error");
+    button.addEventListener("click", async () => {
+      error.hidden = true;
+      button.disabled = true;
+      button.innerHTML = `<i class="bx bx-loader-alt bx-spin"></i> Preparando Stripe`;
+      const response = await fetch("/api/stripe/subscription", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ planId }),
+      });
+      const data = await response.json();
+      if (data.url) location.href = data.url;
+      else {
+        error.hidden = false;
+        error.textContent = data.message || "No fue posible iniciar la suscripción.";
+        button.disabled = false;
+        button.innerHTML = `<i class="bx bx-credit-card"></i> Continuar a Stripe`;
+      }
+    });
+  </script>
+</Layout>

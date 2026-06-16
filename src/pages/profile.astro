@@ -1,0 +1,106 @@
+---
+import Layout from "@/components/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import { row, rows } from "@/lib/db";
+import { money } from "@/lib/format";
+import { syncStripePaymentMethods } from "@/lib/payment-methods";
+
+if (!Astro.locals.user) return Astro.redirect("/login");
+const user = await row<any>("SELECT * FROM usuario WHERE id_usuario = ?", [Astro.locals.user.id]);
+try {
+  await syncStripePaymentMethods(Astro.locals.user.id);
+} catch (error) {
+  console.error("No se pudieron sincronizar metodos de pago de Stripe", error);
+}
+const payments = await rows<any>("SELECT * FROM metodo_pago_usuario WHERE id_usuario=? AND esta_activo=1 ORDER BY es_predeterminado DESC", [Astro.locals.user.id]);
+const orders = await rows<any>("SELECT * FROM pedido WHERE id_usuario = ? ORDER BY fecha_creacion DESC", [Astro.locals.user.id]);
+const subscriptions = await rows<any>("SELECT s.*, p.nombre plan_name, p.precio FROM suscripcion_usuario s JOIN plan_suscripcion p ON p.id_plan=s.id_plan WHERE s.id_usuario=? ORDER BY s.fecha_creacion DESC", [Astro.locals.user.id]);
+const fullName = `${user.nombre || ""} ${user.apellido || ""}`.trim() || user.nombre_usuario;
+const initials = fullName.split(/\s+/).slice(0, 2).map((part: string) => part[0]).join("").toUpperCase();
+const activeSubscriptions = subscriptions.filter((item) => item.estado === "activa");
+const totalSpent = orders.reduce((sum, order) => sum + Number(order.monto_total || 0), 0);
+const message = Astro.url.searchParams.get("message");
+---
+<Layout title="Mi perfil | Fit 360" description="Área privada para gestionar perfil, pagos, suscripciones e historial de compras Fit 360." canonicalPath="/profile" noindex>
+  <Header />
+  <section class="profile-section profile-dashboard" aria-labelledby="profile-title">
+    <div class="profile-container">
+      <div class="profile-hero-card">
+        <div class="profile-avatar" aria-hidden="true">{initials}</div>
+        <div class="profile-hero-copy">
+          <p class="section-kicker"><i class="bx bx-user-circle"></i> Panel de usuario</p>
+          <h1 id="profile-title">{fullName}</h1>
+          <p>{user.correo}</p>
+        </div>
+        <div class="profile-quick-stats" aria-label="Resumen de cuenta">
+          <span><strong>{activeSubscriptions.length}</strong> suscripciones activas</span>
+          <span><strong>{payments.length}</strong> métodos de pago</span>
+          <span><strong>{orders.length}</strong> pedidos</span>
+        </div>
+      </div>
+
+      {message && <div class="alert success"><i class="bx bx-check-circle"></i>{message}</div>}
+
+      <div class="profile-main-grid">
+        <article class="profile-card profile-card-primary">
+          <div class="profile-card-heading">
+            <div><p class="section-kicker"><i class="bx bx-id-card"></i> Datos de contacto</p><h2>Información personal</h2></div>
+            <span class="profile-status-pill"><i class="bx bx-shield-quarter"></i> Privado</span>
+          </div>
+          <form method="POST" action="/api/profile" class="profile-form profile-form-grid">
+            <input type="hidden" name="action" value="update_profile" />
+            <div class="form-group span-2"><label>Nombre completo</label><input name="name" value={fullName} pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ ]+" required /></div>
+            <div class="form-group"><label>Email</label><input type="email" name="email" value={user.correo} required /></div>
+            <div class="form-group"><label>Teléfono</label><input type="tel" name="phone" value={user.telefono} inputmode="numeric" autocomplete="tel-national" minlength="10" maxlength="10" pattern="[0-9]{10}" placeholder="5512345678" title="Ingresa un teléfono válido de 10 dígitos" data-phone-input required /></div>
+            <div class="form-group span-2"><label>Dirección</label><textarea name="address" minlength="10" required>{user.direccion}</textarea></div>
+            <button class="btn span-2"><i class="bx bx-save"></i> Guardar cambios</button>
+          </form>
+        </article>
+
+        <aside class="profile-card security-card">
+          <div class="profile-card-heading compact">
+            <div><p class="section-kicker"><i class="bx bx-lock-alt"></i> Seguridad</p><h2>Acceso</h2></div>
+          </div>
+          <form method="POST" action="/api/profile" class="profile-form">
+            <input type="hidden" name="action" value="change_password" />
+            <input type="password" name="current_password" placeholder="Contraseña actual" required />
+            <input type="password" name="new_password" minlength="10" placeholder="Nueva contraseña" required />
+            <input type="password" name="confirm_password" minlength="10" placeholder="Confirmar contraseña" required />
+            <button class="btn"><i class="bx bx-key"></i> Cambiar contraseña</button>
+          </form>
+          <form method="POST" action="/api/profile" class="session-form">
+            <input type="hidden" name="action" value="revoke_sessions" />
+            <button class="btn-secondary"><i class="bx bx-log-out-circle"></i> Cerrar todas las sesiones</button>
+          </form>
+        </aside>
+      </div>
+
+      <div class="profile-sections-grid">
+        <section class="profile-section-content profile-panel" aria-labelledby="subscriptions-title">
+          <div class="panel-heading"><div><p class="section-kicker"><i class="bx bx-badge-check"></i> Planes</p><h2 id="subscriptions-title">Suscripciones</h2></div><a class="btn-secondary" href="/#plans"><i class="bx bx-plus"></i> Ver planes</a></div>
+          {subscriptions.length ? subscriptions.map((s) => <article class="subscription-card profile-list-card"><div><span class={s.estado === "activa" ? "status-pill active" : "status-pill"}>{s.estado}</span><h3>{s.plan_name}</h3><p>{money(s.precio)} al mes · vence {s.fecha_fin}</p></div>{s.estado === "activa" && <form method="POST" action="/api/profile"><input type="hidden" name="action" value="cancel_subscription" /><input type="hidden" name="subscription_id" value={s.id_suscripcion} /><button class="btn-secondary danger"><i class="bx bx-x-circle"></i> Cancelar</button></form>}</article>) : <div class="profile-empty"><i class="bx bx-calendar-plus"></i><h3>Sin suscripción activa</h3><p>Elige un plan para desbloquear servicios de entrenamiento.</p><a class="btn" href="/#plans">Comparar planes</a></div>}
+        </section>
+
+        <section class="profile-section-content profile-panel" aria-labelledby="payments-title">
+          <div class="panel-heading"><div><p class="section-kicker"><i class="bx bx-credit-card"></i> Stripe</p><h2 id="payments-title">Métodos de pago</h2></div><form method="POST" action="/api/stripe/setup"><button class="btn"><i class="bx bx-plus"></i> Agregar</button></form></div>
+          <p class="panel-note">Stripe gestiona los datos sensibles. Fit 360 solo conserva marca y últimos cuatro dígitos.</p>
+          {payments.length ? payments.map((p) => <article class="payment-method-card profile-list-card"><div class="payment-brand"><i class="bx bx-credit-card-front"></i><div><strong>{p.tipo_tarjeta} •••• {p.ultimos_cuatro}</strong><p>Vence {p.fecha_vencimiento}{Number(p.es_predeterminado) === 1 ? " · predeterminado" : ""}</p></div></div><form method="POST" action="/api/payment-method" class="inline-actions"><input type="hidden" name="id" value={p.id_metodo_pago} />{Number(p.es_predeterminado) !== 1 && <button name="action" value="default" class="btn-secondary">Predeterminado</button>}<button name="action" value="delete" class="btn-secondary danger">Eliminar</button></form></article>) : <div class="profile-empty"><i class="bx bx-wallet"></i><h3>Sin métodos guardados</h3><p>Agrega una tarjeta desde Stripe para acelerar tus pagos.</p></div>}
+        </section>
+      </div>
+
+      <section class="profile-section-content profile-panel orders-panel" aria-labelledby="orders-title">
+        <div class="panel-heading"><div><p class="section-kicker"><i class="bx bx-receipt"></i> Compras</p><h2 id="orders-title">Historial de compras</h2></div><span class="profile-status-pill">Total {money(totalSpent)}</span></div>
+        {orders.length ? <div class="orders-grid">{orders.map((order) => <article class="order-card profile-list-card"><div><h3>Pedido #{order.id_pedido}</h3><p>{order.fecha_creacion}</p></div><div class="order-card-meta"><span class="status-pill">{order.estado}</span><strong>{money(order.monto_total)}</strong></div></article>)}</div> : <div class="profile-empty"><i class="bx bx-shopping-bag"></i><h3>Aún no hay compras</h3><p>Cuando completes una compra, aparecerá aquí con su estado y total.</p><a class="btn" href="/products">Ir al catálogo</a></div>}
+      </section>
+    </div>
+  </section>
+  <Footer />
+  <script>
+    const phoneInput = document.querySelector('[data-phone-input]') as HTMLInputElement | null;
+    phoneInput?.addEventListener('input', () => {
+      const digits = phoneInput.value.replace(/\D/g, '');
+      phoneInput.value = (digits.length === 12 && digits.startsWith('52') ? digits.slice(2) : digits).slice(0, 10);
+    });
+  </script>
+</Layout>

@@ -1,0 +1,79 @@
+---
+import Layout from "@/components/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import StoreScript from "@/components/StoreScript.astro";
+import { row, rows } from "@/lib/db";
+import { assetUrl, money } from "@/lib/format";
+
+const product = await row<any>("SELECT p.*, c.nombre AS nombre_categoria FROM producto p LEFT JOIN categoria_producto c ON c.id_categoria = p.id_categoria WHERE p.id_producto = ? AND p.esta_activo = 1", [Number(Astro.params.id)]);
+if (!product) return Astro.redirect("/products");
+const reviews = await rows<any>("SELECT r.*, u.nombre || char(32) || u.apellido nombre_completo FROM reseña_producto r JOIN usuario u ON u.id_usuario = r.id_usuario WHERE r.id_producto = ? ORDER BY r.fecha_creacion DESC", [product.id_producto]);
+const availableStock = Math.max(0, Number(product.cantidad_stock || 0) - Number(product.stock_reservado || 0));
+const site = (import.meta.env.PUBLIC_SITE_URL || Astro.url.origin || "https://fit360.mx").replace(/\/$/, "");
+const image = assetUrl(product.url_imagen);
+const absoluteImage = `${site}${image}`;
+const description = `${product.nombre}: ${String(product.descripcion || "producto fitness Fit 360").slice(0, 130)}. Precio ${money(product.precio)} y ${availableStock > 0 ? `${availableStock} disponibles` : "sin stock disponible"}.`;
+const productSchema:any = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  name: product.nombre,
+  image: absoluteImage,
+  description: product.descripcion,
+  brand: { "@type": "Brand", name: "Fit 360" },
+  category: product.nombre_categoria,
+  offers: {
+    "@type": "Offer",
+    price: String(product.precio),
+    priceCurrency: "MXN",
+    availability: availableStock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+    url: `${site}/products/${product.id_producto}`
+  },
+};
+if (Number(product.calificacion) > 0 && reviews.length) {
+  productSchema.aggregateRating = { "@type": "AggregateRating", ratingValue: Number(product.calificacion).toFixed(1), reviewCount: reviews.length };
+}
+const schema = [
+  productSchema,
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Inicio", item: site },
+      { "@type": "ListItem", position: 2, name: "Productos", item: `${site}/products` },
+      { "@type": "ListItem", position: 3, name: product.nombre, item: `${site}/products/${product.id_producto}` },
+    ],
+  },
+];
+---
+<Layout title={`${product.nombre} | Producto fitness Fit 360`} description={description} image={image} canonicalPath={`/products/${product.id_producto}`} schema={schema}>
+  <Header />
+  <section class="service-details product-detail-page" aria-labelledby="product-title">
+    <nav class="breadcrumbs" aria-label="Ruta de navegación"><a href="/">Inicio</a><i class="bx bx-chevron-right"></i><a href="/products">Productos</a><i class="bx bx-chevron-right"></i><span>{product.nombre}</span></nav>
+    <div class="service-hero product-hero" data-product={JSON.stringify(product)}>
+      <div class="product-visual"><img src={image} alt={`${product.nombre} de Fit 360`} width="760" height="620" /></div>
+      <div class="product-detail-copy">
+        {product.nombre_categoria && <p class="product-category"><i class="bx bx-purchase-tag"></i>{product.nombre_categoria}</p>}
+        <h1 id="product-title">{product.nombre}</h1>
+        <p class="product-lead">{product.descripcion}</p>
+        <div class="rating" aria-label={`Calificación ${product.calificacion} de 5`}>
+          {Array.from({ length: 5 }, (_, i) => <i class={i < Math.round(product.calificacion) ? "bx bxs-star filled" : "bx bx-star"}></i>)}
+          <span class="rating-text">({Number(product.calificacion).toFixed(1)}/5)</span>
+        </div>
+        <div class="product-price-block"><h2>{money(product.precio)}</h2>{product.precio_anterior && <span class="old-price">{money(product.precio_anterior)}</span>}</div>
+        <p class={availableStock > 0 ? "stock-pill in-stock" : "stock-pill out-of-stock"}><i class="bx bx-package"></i>{availableStock > 0 ? `${availableStock} disponibles` : "Agotado"}</p>
+        <div class="product-actions">
+          <button class="btn" data-add-cart disabled={availableStock <= 0}><i class="bx bx-cart-add"></i>{availableStock > 0 ? "Agregar al carrito" : "Sin stock"}</button>
+          <a class="btn-secondary" href="/checkout/cart"><i class="bx bx-credit-card"></i> Finalizar compra</a>
+        </div>
+      </div>
+    </div>
+    <div class="product-comments">
+      <div class="comments-heading"><div><p class="section-kicker"><i class="bx bx-message-rounded-dots"></i> Reseñas verificadas</p><h2>Comentarios de clientes</h2></div><span>{reviews.length} reseñas</span></div>
+      {reviews.length ? reviews.map((review) => <article class="comment-item"><strong>{review.nombre_completo} - {review.calificacion}/5</strong><p>{review.comentario}</p><small>{review.fecha_creacion}</small></article>) : <p>Aún no hay comentarios para este producto.</p>}
+      {Astro.locals.user ? <form method="POST" action="/api/reviews/form" class="profile-form"><input type="hidden" name="productId" value={product.id_producto} /><label>Calificación</label><input type="number" name="rating" min="1" max="5" required /><label>Comentario</label><textarea name="comment" required></textarea><button class="btn">Publicar comentario</button></form> : <a class="btn" href="/login">Inicia sesión para comentar</a>}
+    </div>
+  </section>
+  <Footer />
+  <StoreScript />
+</Layout>

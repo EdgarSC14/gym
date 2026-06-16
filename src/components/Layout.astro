@@ -1,0 +1,55 @@
+---
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  canonicalPath?: string;
+  noindex?: boolean;
+  admin?: boolean;
+  schema?: unknown | unknown[];
+}
+
+const {
+  title = "Fit 360 | Gimnasio, planes y tienda fitness",
+  description = "Fit 360 combina entrenamiento, suscripciones y productos deportivos para ayudarte a entrenar mejor, recuperarte más rápido y comprar lo necesario en un solo lugar.",
+  image = "/assets/image1.png",
+  canonicalPath,
+  noindex = false,
+  admin = false,
+  schema,
+} = Astro.props;
+
+const site = (import.meta.env.PUBLIC_SITE_URL || Astro.url.origin || "https://fit360.mx").replace(/\/$/, "");
+const canonical = `${site}${canonicalPath ?? Astro.url.pathname}`;
+const absoluteImage = image.startsWith("http") ? image : `${site}${image.startsWith("/") ? image : `/${image}`}`;
+const schemaItems = Array.isArray(schema) ? schema : schema ? [schema] : [];
+---
+<!doctype html>
+<html lang="es-MX">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large"} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_MX" />
+    <meta property="og:site_name" content="Fit 360" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={absoluteImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={absoluteImage} />
+    <meta name="theme-color" content="#d8ff3e" />
+    <link rel="preconnect" href="https://unpkg.com" />
+    <link rel="preconnect" href="https://images.unsplash.com" />
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href={admin ? "/styles/admin-style.css" : "/styles/style.css"} />
+    <title>{title}</title>
+    {schemaItems.map((item) => <script is:inline type="application/ld+json" set:html={JSON.stringify(item)} />)}
+  </head>
+  <body><slot /></body>
+</html>

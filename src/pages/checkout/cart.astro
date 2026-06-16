@@ -1,0 +1,224 @@
+---
+import Layout from "@/components/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+if (!Astro.locals.user) return Astro.redirect("/login");
+---
+<Layout title="Finalizar compra | Fit 360" description="Checkout privado para revisar productos, ajustar cantidades y completar compras del carrito Fit 360." canonicalPath="/checkout/cart" noindex>
+  <Header />
+  <section class="checkout-section cart-checkout" aria-labelledby="cart-title">
+    <div class="cart-checkout-shell">
+      <div class="cart-page-head">
+        <p class="section-kicker"><i class="bx bx-cart"></i> Carrito de compras</p>
+        <h1 id="cart-title">Revisa tu pedido antes de pagar</h1>
+        <p>Confirma cantidades, elimina productos que ya no necesitas y continúa con un pago seguro en Stripe.</p>
+      </div>
+
+      <div class="cart-layout">
+        <div class="cart-panel">
+          <div class="cart-panel-head">
+            <div>
+              <h2>Productos seleccionados</h2>
+              <span id="cart-item-count">0 productos</span>
+            </div>
+            <button class="cart-clear" id="clear-cart" type="button"><i class="bx bx-trash"></i> Vaciar carrito</button>
+          </div>
+          <div id="checkout-items" class="checkout-items-list" aria-live="polite"></div>
+        </div>
+
+        <aside class="cart-summary-card" aria-label="Resumen del pedido">
+          <div class="summary-badge"><i class="bx bx-shield-quarter"></i> Pago protegido por Stripe</div>
+          <h2>Resumen</h2>
+          <div class="summary-row"><span>Subtotal</span><strong id="cart-subtotal">$0.00 MXN</strong></div>
+          <div class="summary-row"><span>Envío</span><strong id="cart-shipping">$0.00 MXN</strong></div>
+          <div class="summary-row total"><span>Total</span><strong id="cart-total">$0.00 MXN</strong></div>
+          <button class="btn cart-pay-btn" id="pay" type="button"><i class="bx bx-credit-card"></i> Pagar con Stripe</button>
+          <a class="btn-secondary cart-continue" href="/products"><i class="bx bx-shopping-bag"></i> Seguir comprando</a>
+          <p class="cart-note"><i class="bx bx-info-circle"></i> El stock se confirma al crear el checkout. Si un producto se agota, te avisaremos antes del pago.</p>
+          <p id="error" class="error-message" hidden></p>
+        </aside>
+      </div>
+    </div>
+  </section>
+  <Footer />
+  <script is:inline>
+    const storageKey = "fit360Cart";
+    const money = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" });
+    const els = {
+      list: document.querySelector("#checkout-items"),
+      count: document.querySelector("#cart-item-count"),
+      subtotal: document.querySelector("#cart-subtotal"),
+      shipping: document.querySelector("#cart-shipping"),
+      total: document.querySelector("#cart-total"),
+      pay: document.querySelector("#pay"),
+      clear: document.querySelector("#clear-cart"),
+      error: document.querySelector("#error"),
+    };
+    let items = readCart();
+
+    function readCart() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(storageKey) || "[]");
+        return Array.isArray(parsed) ? parsed.map(normalizeItem).filter(Boolean) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function normalizeItem(item) {
+      const id = Number(item.id_producto);
+      const quantity = Math.max(1, Math.floor(Number(item.quantity || item.cantidad || 1)));
+      const price = Number(item.price ?? item.precio ?? 0);
+      if (!id || !item.nombre || !Number.isFinite(price)) return null;
+      return {
+        id_producto: id,
+        nombre: String(item.nombre),
+        price,
+        quantity,
+        url_imagen: item.url_imagen || item.image || "",
+        cantidad_stock: Number(item.cantidad_stock || 0),
+      };
+    }
+
+    function imageUrl(value) {
+      if (!value) return "/assets/image1.png";
+      return String(value).startsWith("http") || String(value).startsWith("/") ? value : `/${value}`;
+    }
+
+    function saveCart() {
+      localStorage.setItem(storageKey, JSON.stringify(items));
+      fetch("/api/cart", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ items }) }).catch(() => {});
+      window.dispatchEvent(new Event("fit360-cart-updated"));
+    }
+
+    function totals() {
+      const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      const shipping = subtotal > 0 && subtotal < 1200 ? 89 : 0;
+      return { subtotal, shipping, total: subtotal + shipping, count: items.reduce((sum, item) => sum + item.quantity, 0) };
+    }
+
+    function updateHeaderBadge(count) {
+      document.querySelectorAll(".cart-count").forEach((node) => { node.textContent = String(count); });
+    }
+
+    function render() {
+      const current = totals();
+      updateHeaderBadge(current.count);
+      els.count.textContent = `${current.count} ${current.count === 1 ? "producto" : "productos"}`;
+      els.subtotal.textContent = `${money.format(current.subtotal)} MXN`;
+      els.shipping.textContent = current.shipping ? `${money.format(current.shipping)} MXN` : "Gratis";
+      els.total.textContent = `${money.format(current.total)} MXN`;
+      els.pay.disabled = items.length === 0;
+      els.clear.disabled = items.length === 0;
+      els.list.replaceChildren();
+
+      if (!items.length) {
+        const empty = document.createElement("div");
+        empty.className = "cart-empty-state";
+        empty.innerHTML = `<i class="bx bx-shopping-bag"></i><h2>Tu carrito está vacío</h2><p>Explora el catálogo y agrega productos para complementar tu rutina Fit 360.</p><a class="btn" href="/products">Ver productos</a>`;
+        els.list.append(empty);
+        return;
+      }
+
+      for (const item of items) {
+        const card = document.createElement("article");
+        card.className = "checkout-cart-item";
+        const img = document.createElement("img");
+        img.src = imageUrl(item.url_imagen);
+        img.alt = item.nombre;
+        img.loading = "lazy";
+
+        const body = document.createElement("div");
+        body.className = "checkout-cart-info";
+        const title = document.createElement("h3");
+        title.textContent = item.nombre;
+        const meta = document.createElement("p");
+        meta.textContent = `${money.format(item.price)} MXN por unidad`;
+        const controls = document.createElement("div");
+        controls.className = "cart-quantity-controls";
+
+        const minus = document.createElement("button");
+        minus.type = "button";
+        minus.setAttribute("aria-label", `Restar ${item.nombre}`);
+        minus.innerHTML = `<i class="bx bx-minus"></i>`;
+        minus.addEventListener("click", () => updateQuantity(item.id_producto, item.quantity - 1));
+
+        const qty = document.createElement("span");
+        qty.textContent = String(item.quantity);
+        qty.setAttribute("aria-label", `Cantidad ${item.quantity}`);
+
+        const plus = document.createElement("button");
+        plus.type = "button";
+        plus.setAttribute("aria-label", `Sumar ${item.nombre}`);
+        plus.innerHTML = `<i class="bx bx-plus"></i>`;
+        plus.addEventListener("click", () => updateQuantity(item.id_producto, item.quantity + 1));
+
+        controls.append(minus, qty, plus);
+        body.append(title, meta, controls);
+
+        const aside = document.createElement("div");
+        aside.className = "checkout-cart-total";
+        const total = document.createElement("strong");
+        total.textContent = `${money.format(item.price * item.quantity)} MXN`;
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "cart-remove";
+        remove.innerHTML = `<i class="bx bx-x"></i> Eliminar`;
+        remove.addEventListener("click", () => removeItem(item.id_producto));
+        aside.append(total, remove);
+
+        card.append(img, body, aside);
+        els.list.append(card);
+      }
+    }
+
+    function updateQuantity(id, quantity) {
+      items = quantity <= 0 ? items.filter((item) => item.id_producto !== id) : items.map((item) => item.id_producto === id ? { ...item, quantity } : item);
+      saveCart();
+      render();
+    }
+
+    function removeItem(id) {
+      items = items.filter((item) => item.id_producto !== id);
+      saveCart();
+      render();
+    }
+
+    async function hydrateRemoteCart() {
+      try {
+        const response = await fetch("/api/cart");
+        const remote = response.ok ? await response.json() : [];
+        if (Array.isArray(remote) && remote.length) {
+          items = remote.map(normalizeItem).filter(Boolean);
+          localStorage.setItem(storageKey, JSON.stringify(items));
+          render();
+        }
+      } catch {}
+    }
+
+    els.clear.addEventListener("click", () => {
+      items = [];
+      saveCart();
+      render();
+    });
+
+    els.pay.addEventListener("click", async () => {
+      if (!items.length) return;
+      els.error.hidden = true;
+      els.pay.disabled = true;
+      els.pay.innerHTML = `<i class="bx bx-loader-alt bx-spin"></i> Preparando pago`; 
+      const response = await fetch("/api/stripe/cart", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ items }) });
+      const data = await response.json();
+      if (data.url) location.href = data.url;
+      else {
+        els.error.hidden = false;
+        els.error.textContent = data.message || "No fue posible iniciar el pago.";
+        els.pay.disabled = false;
+        els.pay.innerHTML = `<i class="bx bx-credit-card"></i> Pagar con Stripe`; 
+      }
+    });
+
+    render();
+    hydrateRemoteCart();
+  </script>
+</Layout>

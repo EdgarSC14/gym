@@ -1,0 +1,71 @@
+---
+import Layout from "@/components/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import ProductCard from "@/components/ProductCard.astro";
+import StoreScript from "@/components/StoreScript.astro";
+import { rows, row } from "@/lib/db";
+import { assetUrl, money } from "@/lib/format";
+
+const services = await rows<any>("SELECT * FROM servicio WHERE esta_activo = 1 LIMIT 6");
+const plans = await rows<any>("SELECT * FROM plan_suscripcion WHERE esta_activo = 1 ORDER BY precio");
+const products = await rows<any>("SELECT p.*, c.nombre AS nombre_categoria FROM producto p LEFT JOIN categoria_producto c ON p.id_categoria = c.id_categoria WHERE p.es_destacado = 1 AND p.esta_activo = 1 ORDER BY p.nombre ASC LIMIT 6");
+const active = Astro.locals.user ? await row<any>("SELECT id_plan FROM suscripcion_usuario WHERE id_usuario = ? AND estado = 'activa' AND date(fecha_fin)>=date('now') ORDER BY fecha_inicio DESC LIMIT 1", [Astro.locals.user.id]) : null;
+const allowedServices = active ? new Set((await rows<any>("SELECT id_servicio FROM plan_servicio WHERE id_plan=?", [Number(active.id_plan)])).map((item) => Number(item.id_servicio))) : new Set<number>();
+const site = (import.meta.env.PUBLIC_SITE_URL || Astro.url.origin || "https://fit360.mx").replace(/\/$/, "");
+const homeSchema = [
+  {
+    "@context": "https://schema.org",
+    "@type": "HealthClub",
+    name: "Fit 360",
+    url: site,
+    image: `${site}/assets/image1.png`,
+    description: "Gimnasio, suscripciones de entrenamiento y tienda fitness con productos deportivos en México.",
+    sameAs: ["https://facebook.com/fit360gym", "https://instagram.com/fit360gym"],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Fit 360",
+    url: site,
+  },
+];
+---
+<Layout title="Fit 360 | Gimnasio, suscripciones y tienda fitness" description="Entrena con programas guiados, elige una suscripción Fit 360 y compra suplementos o equipo deportivo desde un catálogo fitness en México." canonicalPath="/" schema={homeSchema}>
+  <Header />
+  <section class="home" id="home" aria-labelledby="home-title">
+    <div class="home-content">
+      <p class="eyebrow"><i class="bx bx-pulse"></i> Entrenamiento, planes y tienda fitness</p>
+      <h1 id="home-title">Gimnasio Fit 360 para entrenar, recuperarte y avanzar</h1>
+      <p class="hero-copy">Accede a servicios por suscripción, consulta rutinas especializadas y compra productos deportivos sin salir de la misma plataforma.</p>
+      <div class="hero-actions">
+        <a href="#plans" class="btn"><i class="bx bx-calendar-check"></i> Ver planes</a>
+        <a href="/products" class="btn-secondary"><i class="bx bx-shopping-bag"></i> Explorar productos</a>
+      </div>
+      <div class="hero-metrics" aria-label="Resumen de Fit 360">
+        <span><strong>{services.length}</strong> servicios activos</span>
+        <span><strong>{plans.length}</strong> planes disponibles</span>
+        <span><strong>{products.length}</strong> destacados</span>
+      </div>
+    </div>
+    <div class="home-img">
+      <img src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=900&q=80" alt="Atleta entrenando fuerza en gimnasio Fit 360" width="900" height="600" />
+    </div>
+  </section>
+  <section class="services reveal-section" id="services" aria-labelledby="services-title">
+    <div class="section-kicker"><i class="bx bx-dumbbell"></i> Servicios por plan</div>
+    <h2 class="heading" id="services-title">Entrenamiento <span>según tu nivel</span></h2>
+    <p class="section-intro">Cada servicio se desbloquea según tu suscripción para mantener una ruta clara: base técnica, progreso medible y acompañamiento.</p>
+    <div class="services-content">{services.map((service) => {
+      const locked = !Astro.locals.user || !allowedServices.has(Number(service.id_servicio));
+      return <article class={locked ? "service-box locked logged-in" : "service-box"}><a href={locked ? (Astro.locals.user ? "/#plans" : "/login") : `/services/${service.id_servicio}`} aria-label={`Ver servicio ${service.nombre}`}><img src={assetUrl(service.url_imagen)} alt={`Servicio Fit 360: ${service.nombre}`} loading="lazy" /><div class="service-overlay"><h3>{service.nombre}</h3>{locked && <p class="lock-message">{Astro.locals.user ? "Mejora tu plan para acceder" : "Inicia sesión para acceder"}</p>}</div></a></article>;
+    })}</div>
+  </section>
+  <section class="about reveal-section" id="about" aria-labelledby="about-title">
+    <div class="about-img"><img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80" alt="Comunidad de entrenamiento Fit 360" width="800" height="600" loading="lazy" /></div>
+    <div class="about-content"><p class="section-kicker"><i class="bx bx-target-lock"></i> Método 360</p><h2 class="heading" id="about-title">¿Por qué <span>elegir Fit 360?</span></h2><p class="section-intro compact">Ordenamos entrenamiento, progreso y compras fitness para que cada decisión tenga sentido dentro de tu objetivo.</p><div class="benefits-list"><div class="benefit-item"><i class="bx bx-group"></i><div><h3>Comunidad motivadora</h3><p>Entrena con una comunidad enfocada en constancia, técnica y seguimiento real.</p></div></div><div class="benefit-item"><i class="bx bx-line-chart"></i><div><h3>Progreso medible</h3><p>Planes y servicios estructurados para avanzar de básico a premium sin improvisar.</p></div></div><div class="benefit-item"><i class="bx bx-package"></i><div><h3>Tienda integrada</h3><p>Compra suplementos y equipo desde el mismo catálogo que usas para gestionar tu entrenamiento.</p></div></div></div><a href="#plans" class="btn">Comparar planes</a></div>
+  </section>
+  <section class="plans reveal-section" id="plans" aria-labelledby="plans-title"><div class="section-kicker"><i class="bx bx-badge-check"></i> Suscripciones</div><h2 class="heading" id="plans-title">Elige tu <span>ritmo de avance</span></h2><p class="section-intro">Empieza con lo esencial o desbloquea servicios avanzados cuando tu rutina lo pida.</p><div class="plans-content">{plans.map((plan) => <article class="box"><div class="plan-icon"><i class="bx bx-medal"></i></div><h3>{plan.nombre}</h3><h2><span>{money(plan.precio)}</span><small> MXN/Mes</small></h2><p>{plan.descripcion}</p><ul>{String(plan.beneficios).split(/\r?\n|,\s*/).filter(Boolean).map((benefit) => <li><i class="bx bx-check"></i>{benefit}</li>)}</ul><a href={`/checkout/subscription/${plan.id_plan}`}>Suscribirse <i class="bx bx-right-arrow-alt"></i></a></article>)}</div></section>
+  <section class="review reveal-section" id="review" aria-labelledby="featured-products-title"><div class="review-box"><div class="section-kicker"><i class="bx bx-store-alt"></i> Tienda Fit 360</div><h2 class="heading" id="featured-products-title">Productos <span>destacados</span></h2><p class="section-intro">Suplementos y equipo para complementar tu rutina, con stock visible y reseñas de clientes.</p><div class="wrapper">{products.map((product) => <ProductCard product={product} />)}</div><div class="view-more-container"><a href="/products" class="view-more-btn">Ver catálogo completo <i class="bx bx-right-arrow-alt"></i></a></div></div></section>
+  <Footer /><StoreScript />
+</Layout>

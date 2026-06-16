@@ -1,0 +1,5 @@
+---
+import AdminLayout from "@/components/AdminLayout.astro"; import { rows,row } from "@/lib/db"; import { money } from "@/lib/format";
+const totals=await row<any>("SELECT COUNT(*) sales,COALESCE(SUM(monto),0) revenue,SUM(CASE WHEN estado='pendiente' THEN 1 ELSE 0 END) pending FROM pago");const payments=await rows<any>("SELECT p.*,u.nombre||' '||u.apellido usuario FROM pago p LEFT JOIN pedido o ON o.id_pedido=p.id_pedido LEFT JOIN usuario u ON u.id_usuario=o.id_usuario ORDER BY p.fecha_pago DESC LIMIT 100");
+---
+<AdminLayout title="Ventas y Estadísticas"><div class="stats-grid"><div class="stat-card"><h3>Pagos</h3><p>{totals.sales}</p></div><div class="stat-card"><h3>Ingresos</h3><p>{money(totals.revenue)}</p></div><div class="stat-card"><h3>Pendientes</h3><p>{totals.pending||0}</p></div></div><div class="admin-table"><table><thead><tr><th>ID</th><th>Usuario</th><th>Monto</th><th>Método</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>{payments.map((p)=><tr><td>{p.id_pago}</td><td>{p.usuario||"-"}</td><td>{money(p.monto)}</td><td>{p.metodo_pago}</td><td>{p.estado}</td><td>{p.fecha_pago}</td></tr>)}</tbody></table></div></AdminLayout>

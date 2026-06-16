@@ -1,0 +1,4 @@
+---
+import Layout from "@/components/Layout.astro"; import Header from "@/components/Header.astro"; import Footer from "@/components/Footer.astro";
+---
+<Layout title="Pago recibido - Fit 360"><Header /><section class="checkout-section"><div class="success-message"><h1>Pago recibido</h1><p>Stripe confirmó tu operación. El estado se actualizará mediante webhook.</p><a class="btn" href="/profile">Ver mi perfil</a></div></section><Footer /><script>localStorage.removeItem("fit360Cart");</script></Layout>

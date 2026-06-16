@@ -1,0 +1,58 @@
+---
+import Layout from "@/components/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import ProductCard from "@/components/ProductCard.astro";
+import StoreScript from "@/components/StoreScript.astro";
+import { rows } from "@/lib/db";
+
+const category = Number(Astro.url.searchParams.get("category") || 0);
+const categories = await rows<any>("SELECT * FROM categoria_producto WHERE esta_activo = 1");
+const selectedCategory = categories.find((item) => Number(item.id_categoria) === category);
+const productSql = "SELECT p.*, c.nombre AS nombre_categoria FROM producto p LEFT JOIN categoria_producto c ON p.id_categoria = c.id_categoria WHERE p.esta_activo = 1";
+const products = category
+  ? await rows<any>(`${productSql} AND p.id_categoria = ? ORDER BY p.es_destacado DESC, p.nombre ASC`, [category])
+  : await rows<any>(`${productSql} ORDER BY p.es_destacado DESC, p.nombre ASC`);
+const site = (import.meta.env.PUBLIC_SITE_URL || Astro.url.origin || "https://fit360.mx").replace(/\/$/, "");
+const description = selectedCategory
+  ? `Compra productos de ${selectedCategory.nombre} en Fit 360. Revisa precios, stock disponible y reseñas antes de agregar al carrito.`
+  : "Compra suplementos, vitaminas y equipo deportivo en el catálogo Fit 360. Consulta categorías, precios, stock disponible y reseñas de clientes.";
+const schema = [
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: selectedCategory ? `Productos de ${selectedCategory.nombre} | Fit 360` : "Catálogo de productos Fit 360",
+    description,
+    url: `${site}${category ? `/products?category=${category}` : "/products"}`
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Inicio", item: site },
+      { "@type": "ListItem", position: 2, name: "Productos", item: `${site}/products` },
+    ],
+  },
+];
+---
+<Layout title={selectedCategory ? `${selectedCategory.nombre} fitness | Fit 360` : "Catálogo fitness | Suplementos y equipo | Fit 360"} description={description} canonicalPath="/products" schema={schema}>
+  <Header />
+  <section class="review products-catalog" aria-labelledby="catalog-title">
+    <div class="review-box catalog-shell">
+      <div class="section-kicker"><i class="bx bx-shopping-bag"></i> Catálogo fitness</div>
+      <h1 class="heading" id="catalog-title">{selectedCategory ? selectedCategory.nombre : "Productos para entrenar mejor"}</h1>
+      <p class="products-subtitle">{description}</p>
+      <div class="catalog-toolbar">
+        <div class="category-filters" aria-label="Filtrar productos por categoría">
+          <a class={!category ? "filter-btn active" : "filter-btn"} href="/products">Todos</a>
+          {categories.map((item) => <a class={category === item.id_categoria ? "filter-btn active" : "filter-btn"} href={`/products?category=${item.id_categoria}`}>{item.nombre}</a>)}
+        </div>
+        <span class="catalog-count"><i class="bx bx-grid-alt"></i>{products.length} productos</span>
+      </div>
+      <div class="wrapper">{products.map((product) => <ProductCard product={product} />)}</div>
+      <a class="btn" href="/checkout/cart"><i class="bx bx-cart"></i> Finalizar compra</a>
+    </div>
+  </section>
+  <Footer />
+  <StoreScript />
+</Layout>

@@ -1,0 +1,22 @@
+---
+import { assetUrl, money } from "@/lib/format";
+const { product } = Astro.props;
+const availableStock = Math.max(0, Number(product.cantidad_stock || 0) - Number(product.stock_reservado || 0));
+---
+<article class="review-item" data-product={JSON.stringify(product)}>
+  <img src={assetUrl(product.url_imagen)} alt={`${product.nombre} Fit 360`} loading="lazy" />
+  <h2>{product.nombre}</h2>
+  {product.nombre_categoria && <div class="product-category">{product.nombre_categoria}</div>}
+  <div class="rating" aria-label={`Calificación ${product.calificacion} de 5`}>
+    {Array.from({ length: 5 }, (_, i) => <i class={i < Math.round(product.calificacion) ? "bx bxs-star filled" : "bx bx-star"}></i>)}
+    <span class="rating-text">({Number(product.calificacion).toFixed(1)}/5)</span>
+  </div>
+  <div class="price">
+    <span class="current-price">{money(product.precio)}</span>
+    {product.precio_anterior && <span class="old-price">{money(product.precio_anterior)}</span>}
+  </div>
+  {product.descripcion && <p>{product.descripcion}</p>}
+  <div class="stock-info"><span class="stock-label">Stock:</span> <span class={availableStock > 0 ? "stock-amount in-stock" : "stock-amount out-of-stock"}>{availableStock > 0 ? `${availableStock} disponibles` : "Agotado"}</span></div>
+  <a class="btn-secondary" href={`/products/${product.id_producto}`}>Ver detalles y reseñas</a>
+  <button class="add-to-cart" data-add-cart disabled={availableStock <= 0}>{availableStock > 0 ? "Agregar al Carrito" : "Sin Stock"}</button>
+</article>

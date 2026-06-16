@@ -25,3 +25,57 @@ const user = Astro.locals.user;
     ) : <a href="/login" class="nav-btn">Iniciar Sesión</a>}
   </div>
 </header>
+<script is:inline data-script="fit360-header-cart-sync">
+  (() => {
+    const key = "fit360Cart";
+    const readLocalCount = () => {
+      try {
+        const items = JSON.parse(localStorage.getItem(key) || "[]");
+        return Array.isArray(items) ? items.reduce((total, item) => total + Number(item.quantity || item.cantidad || 0), 0) : 0;
+      } catch {
+        return 0;
+      }
+    };
+
+    const paintCount = (count) => {
+      document.querySelectorAll(".cart-count").forEach((node) => {
+        node.textContent = String(count);
+      });
+    };
+
+    const paintLocalCount = () => paintCount(readLocalCount());
+
+    const syncRemoteCart = async () => {
+      try {
+        const response = await fetch("/api/cart");
+        if (!response.ok) return;
+
+        const remote = await response.json();
+        if (!Array.isArray(remote) || !remote.length) {
+          paintLocalCount();
+          return;
+        }
+
+        const cart = remote.map((item) => ({
+          id_producto: Number(item.id_producto),
+          nombre: item.nombre,
+          price: Number(item.precio),
+          quantity: Number(item.cantidad),
+          url_imagen: item.url_imagen
+        }));
+
+        localStorage.setItem(key, JSON.stringify(cart));
+        paintCount(cart.reduce((total, item) => total + Number(item.quantity || 0), 0));
+      } catch {
+        paintLocalCount();
+      }
+    };
+
+    paintLocalCount();
+    syncRemoteCart();
+    window.addEventListener("fit360-cart-updated", paintLocalCount);
+    window.addEventListener("storage", (event) => {
+      if (event.key === key) paintLocalCount();
+    });
+  })();
+</script>

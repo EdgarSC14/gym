@@ -6311,3 +6311,490 @@ header .cart-count {
         justify-content: space-between;
     }
 }
+
+/* Fit 360 expandable order history */
+.order-accordion-list {
+    gap: 1.2rem;
+}
+
+.order-disclosure.profile-list-card {
+    display: block;
+    padding: 0;
+    overflow: hidden;
+    transition: border-color 220ms ease, background 220ms ease, transform 220ms ease;
+}
+
+.order-disclosure.profile-list-card:hover,
+.order-disclosure.profile-list-card[open] {
+    border-color: rgba(216, 255, 62, 0.26);
+    background: rgba(244, 247, 239, 0.062);
+}
+
+.order-disclosure.profile-list-card[open] {
+    transform: translateY(-1px);
+}
+
+.order-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.6rem;
+    width: 100%;
+    padding: 1.5rem;
+    cursor: pointer;
+    list-style: none;
+}
+
+.order-summary::-webkit-details-marker {
+    display: none;
+}
+
+.order-summary:focus-visible {
+    outline: 2px solid var(--main-color);
+    outline-offset: -4px;
+}
+
+.order-summary-main,
+.order-summary-meta,
+.order-detail-meta,
+.order-detail-footer,
+.order-line-item,
+.order-line-numbers {
+    display: flex;
+    align-items: center;
+}
+
+.order-summary-main {
+    gap: 1.2rem;
+    min-width: 0;
+}
+
+.order-summary-main strong {
+    display: block;
+    color: var(--text-color);
+    font-size: 1.65rem;
+}
+
+.order-summary-main small {
+    display: block;
+    color: var(--muted-color);
+    font-size: 1.22rem;
+    margin-top: 0.25rem;
+}
+
+.order-receipt-icon,
+.order-line-placeholder {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: var(--main-color);
+    background: rgba(216, 255, 62, 0.08);
+    border: 1px solid rgba(216, 255, 62, 0.16);
+}
+
+.order-receipt-icon {
+    width: 4.4rem;
+    height: 4.4rem;
+    font-size: 2.2rem;
+}
+
+.order-summary-meta {
+    justify-content: flex-end;
+    gap: 1rem;
+    color: var(--muted-color);
+    font-size: 1.3rem;
+    white-space: nowrap;
+}
+
+.order-summary-meta > strong {
+    color: var(--main-color);
+    font-size: 1.75rem;
+}
+
+.order-summary-meta > i {
+    color: var(--muted-color);
+    font-size: 2.2rem;
+    transition: transform 220ms ease, color 220ms ease;
+}
+
+.order-disclosure[open] .order-summary-meta > i {
+    color: var(--main-color);
+    transform: rotate(180deg);
+}
+
+.order-status-pagado,
+.order-status-entregado {
+    color: #d8ff3e;
+    background: rgba(216, 255, 62, 0.1);
+    border-color: rgba(216, 255, 62, 0.22);
+}
+
+.order-status-pendiente,
+.order-status-enviado {
+    color: #9fd7ff;
+    background: rgba(95, 179, 255, 0.1);
+    border-color: rgba(95, 179, 255, 0.22);
+}
+
+.order-status-cancelado {
+    color: #ff9b84;
+    background: rgba(255, 107, 61, 0.1);
+    border-color: rgba(255, 107, 61, 0.22);
+}
+
+.order-detail-body {
+    padding: 0 1.5rem 1.5rem;
+    border-top: 1px solid rgba(244, 247, 239, 0.08);
+    animation: orderReveal 220ms ease both;
+}
+
+.order-detail-meta {
+    flex-wrap: wrap;
+    gap: 0.9rem;
+    padding: 1.2rem 0;
+}
+
+.order-detail-meta span,
+.order-detail-footer span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: var(--muted-color);
+    font-size: 1.28rem;
+}
+
+.order-detail-meta i,
+.order-detail-footer i {
+    color: var(--main-color);
+    font-size: 1.7rem;
+}
+
+.order-detail-meta strong {
+    color: var(--text-color);
+    font-weight: 700;
+}
+
+.order-items-list {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.order-line-item {
+    justify-content: space-between;
+    gap: 1.2rem;
+    padding: 1rem;
+    border-radius: 8px;
+    background: rgba(10, 14, 17, 0.46);
+    border: 1px solid rgba(244, 247, 239, 0.08);
+}
+
+.order-line-item img,
+.order-line-placeholder {
+    width: 5.6rem;
+    height: 5.6rem;
+}
+
+.order-line-item img {
+    flex: 0 0 auto;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid rgba(244, 247, 239, 0.1);
+}
+
+.order-line-placeholder {
+    font-size: 2.5rem;
+}
+
+.order-line-copy {
+    min-width: 0;
+    flex: 1;
+}
+
+.order-line-copy h3 {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 1.5rem;
+    line-height: 1.25;
+}
+
+.order-line-copy p {
+    margin-top: 0.35rem;
+    color: var(--muted-color);
+    font-size: 1.18rem;
+}
+
+.order-line-numbers {
+    justify-content: flex-end;
+    gap: 1rem;
+    text-align: right;
+    color: var(--muted-color);
+    font-size: 1.25rem;
+}
+
+.order-line-numbers > strong {
+    min-width: 8.6rem;
+    color: var(--text-color);
+    font-size: 1.45rem;
+}
+
+.order-detail-footer {
+    justify-content: space-between;
+    gap: 1.2rem;
+    margin-top: 1rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid rgba(244, 247, 239, 0.08);
+}
+
+.order-detail-footer strong {
+    color: var(--main-color);
+    font-size: 1.7rem;
+    white-space: nowrap;
+}
+
+.order-detail-empty {
+    padding: 1.2rem;
+    color: var(--muted-color);
+    background: rgba(244, 247, 239, 0.04);
+    border-radius: 8px;
+}
+
+@keyframes orderReveal {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 760px) {
+    .order-summary,
+    .order-summary-meta,
+    .order-line-item,
+    .order-line-numbers,
+    .order-detail-footer {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .order-summary-meta {
+        width: 100%;
+        gap: 0.8rem;
+        white-space: normal;
+    }
+
+    .order-summary-meta > i {
+        position: absolute;
+        right: 1.4rem;
+        top: 1.8rem;
+    }
+
+    .order-line-item {
+        display: grid;
+        grid-template-columns: 5.6rem 1fr;
+    }
+
+    .order-line-numbers {
+        grid-column: 1 / -1;
+        text-align: left;
+    }
+
+    .order-line-numbers > strong {
+        min-width: 0;
+    }
+}
+
+/* Fit 360 compact order receipt thumbnails */
+.order-line-item {
+    display: grid;
+    grid-template-columns: 4.2rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+}
+
+.order-line-item img,
+.order-line-placeholder {
+    width: 4.2rem;
+    height: 4.2rem;
+    max-width: 4.2rem;
+    min-width: 4.2rem;
+    aspect-ratio: 1;
+}
+
+.order-line-item img {
+    display: block;
+    object-fit: cover;
+    object-position: center;
+}
+
+.order-line-placeholder {
+    font-size: 2rem;
+}
+
+.order-line-copy h3 {
+    font-size: 1.4rem;
+}
+
+.order-line-copy p {
+    font-size: 1.1rem;
+}
+
+.order-line-numbers {
+    display: grid;
+    grid-template-columns: repeat(3, max-content);
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.order-line-numbers > strong {
+    min-width: 7.8rem;
+}
+
+@media (max-width: 760px) {
+    .order-line-item {
+        grid-template-columns: 3.8rem minmax(0, 1fr);
+        gap: 0.85rem;
+        padding: 0.85rem;
+    }
+
+    .order-line-item img,
+    .order-line-placeholder {
+        width: 3.8rem;
+        height: 3.8rem;
+        max-width: 3.8rem;
+        min-width: 3.8rem;
+    }
+
+    .order-line-numbers {
+        grid-column: 2;
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+        margin-top: 0.45rem;
+    }
+}
+
+/* Fit 360 product review star input */
+.product-review-form {
+    margin-top: 1.8rem;
+}
+
+.star-rating-field {
+    border: 0;
+    padding: 0;
+    margin: 0 0 1.2rem;
+}
+
+.star-rating-field legend {
+    display: block;
+    color: var(--text-color);
+    font-size: 1.45rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+}
+
+.star-rating-input {
+    display: inline-flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: 8px;
+    background: rgba(244, 247, 239, 0.045);
+    border: 1px solid rgba(244, 247, 239, 0.1);
+}
+
+.star-rating-input input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.star-rating-input label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.8rem;
+    height: 3.8rem;
+    margin: 0;
+    cursor: pointer;
+    color: rgba(244, 247, 239, 0.28);
+    border-radius: 8px;
+    transition: color 160ms ease, transform 160ms ease, background 160ms ease;
+}
+
+.star-rating-input label i {
+    font-size: 2.65rem;
+    line-height: 1;
+}
+
+.star-rating-input label:hover,
+.star-rating-input label:hover ~ label,
+.star-rating-input input:checked ~ label {
+    color: var(--main-color);
+}
+
+.star-rating-input label:hover {
+    transform: translateY(-2px) scale(1.04);
+    background: rgba(216, 255, 62, 0.08);
+}
+
+.star-rating-input input:focus-visible + label {
+    outline: 2px solid var(--main-color);
+    outline-offset: 2px;
+}
+
+.product-review-form textarea {
+    min-height: 11rem;
+}
+
+@media (max-width: 520px) {
+    .star-rating-input {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .star-rating-input label {
+        width: 3.4rem;
+        height: 3.4rem;
+    }
+
+    .star-rating-input label i {
+        font-size: 2.35rem;
+    }
+}
+
+/* Fit 360 review update feedback */
+.review-save-alert,
+.review-form-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: var(--muted-color);
+    font-size: 1.25rem;
+    line-height: 1.45;
+}
+
+.review-save-alert {
+    margin: 0.4rem 0 1.2rem;
+    padding: 0.85rem 1rem;
+    border-radius: 8px;
+    color: #d8ff3e;
+    background: rgba(216, 255, 62, 0.08);
+    border: 1px solid rgba(216, 255, 62, 0.18);
+}
+
+.review-save-alert i {
+    font-size: 1.8rem;
+}
+
+.review-form-note {
+    margin-top: 0.7rem;
+}

@@ -9,6 +9,8 @@ import { assetUrl, money } from "@/lib/format";
 const product = await row<any>("SELECT p.*, c.nombre AS nombre_categoria FROM producto p LEFT JOIN categoria_producto c ON c.id_categoria = p.id_categoria WHERE p.id_producto = ? AND p.esta_activo = 1", [Number(Astro.params.id)]);
 if (!product) return Astro.redirect("/products");
 const reviews = await rows<any>("SELECT r.*, u.nombre || char(32) || u.apellido nombre_completo FROM reseña_producto r JOIN usuario u ON u.id_usuario = r.id_usuario WHERE r.id_producto = ? ORDER BY r.fecha_creacion DESC", [product.id_producto]);
+const myReview = Astro.locals.user ? await row<any>("SELECT calificacion,comentario FROM reseña_producto WHERE id_producto=? AND id_usuario=?", [product.id_producto, Astro.locals.user.id]) : null;
+const reviewSaved = Astro.url.searchParams.get("review") === "saved";
 const availableStock = Math.max(0, Number(product.cantidad_stock || 0) - Number(product.stock_reservado || 0));
 const site = (import.meta.env.PUBLIC_SITE_URL || Astro.url.origin || "https://fit360.mx").replace(/\/$/, "");
 const image = assetUrl(product.url_imagen);
@@ -68,10 +70,11 @@ const schema = [
         </div>
       </div>
     </div>
-    <div class="product-comments">
+    <div class="product-comments" id="reviews">
       <div class="comments-heading"><div><p class="section-kicker"><i class="bx bx-message-rounded-dots"></i> Reseñas verificadas</p><h2>Comentarios de clientes</h2></div><span>{reviews.length} reseñas</span></div>
+      {reviewSaved && <p class="review-save-alert"><i class="bx bx-check-circle"></i> Tu reseña se guardó correctamente.</p>}
       {reviews.length ? reviews.map((review) => <article class="comment-item"><strong>{review.nombre_completo} - {review.calificacion}/5</strong><p>{review.comentario}</p><small>{review.fecha_creacion}</small></article>) : <p>Aún no hay comentarios para este producto.</p>}
-      {Astro.locals.user ? <form method="POST" action="/api/reviews/form" class="profile-form"><input type="hidden" name="productId" value={product.id_producto} /><label>Calificación</label><input type="number" name="rating" min="1" max="5" required /><label>Comentario</label><textarea name="comment" required></textarea><button class="btn">Publicar comentario</button></form> : <a class="btn" href="/login">Inicia sesión para comentar</a>}
+      {Astro.locals.user ? <form method="POST" action="/api/reviews/form" class="profile-form product-review-form"><input type="hidden" name="productId" value={product.id_producto} /><fieldset class="star-rating-field"><legend>Calificación</legend><div class="star-rating-input" role="radiogroup" aria-label="Calificación de 1 a 5 estrellas">{[5, 4, 3, 2, 1].map((value) => <><input type="radio" id={`rating-${product.id_producto}-${value}`} name="rating" value={value} checked={Number(myReview?.calificacion) === value} required /><label for={`rating-${product.id_producto}-${value}`} title={`${value} de 5 estrellas`} aria-label={`${value} de 5 estrellas`}><i class="bx bxs-star" aria-hidden="true"></i></label></>)}</div><p class="review-form-note">{myReview ? "Ya tienes una reseña para este producto. Al publicar, se actualizará." : "Elige de 1 a 5 estrellas."}</p></fieldset><label>Comentario</label><textarea name="comment" required>{myReview?.comentario || ""}</textarea><button class="btn">{myReview ? "Actualizar comentario" : "Publicar comentario"}</button></form> : <a class="btn" href="/login">Inicia sesión para comentar</a>}
     </div>
   </section>
   <Footer />

@@ -14,7 +14,19 @@ try {
   console.error("No se pudieron sincronizar metodos de pago de Stripe", error);
 }
 const payments = await rows<any>("SELECT * FROM metodo_pago_usuario WHERE id_usuario=? AND esta_activo=1 ORDER BY es_predeterminado DESC", [Astro.locals.user.id]);
-const orders = await rows<any>("SELECT * FROM pedido WHERE id_usuario = ? ORDER BY fecha_creacion DESC", [Astro.locals.user.id]);
+const orders = await rows<any>("SELECT p.*, COALESCE((SELECT estado FROM pago WHERE id_pedido=p.id_pedido ORDER BY fecha_pago DESC LIMIT 1), 'pendiente') estado_pago FROM pedido p WHERE p.id_usuario = ? ORDER BY p.fecha_creacion DESC", [Astro.locals.user.id]);
+const orderIds = orders.map((order) => Number(order.id_pedido));
+const itemPlaceholders = orderIds.map(() => "?").join(",");
+const orderItems = orderIds.length
+  ? await rows<any>("SELECT ip.*, COALESCE(ip.nombre_snapshot, pr.nombre, sv.nombre, 'Item') nombre_item, COALESCE(ip.sku_snapshot, pr.sku, '') sku_item, pr.url_imagen FROM item_pedido ip LEFT JOIN producto pr ON pr.id_producto = ip.id_producto LEFT JOIN servicio sv ON sv.id_servicio = ip.id_servicio WHERE ip.id_pedido IN (" + itemPlaceholders + ") ORDER BY ip.id_item_pedido ASC", orderIds)
+  : [];
+const orderItemsById = new Map<number, any[]>();
+for (const item of orderItems) {
+  const id = Number(item.id_pedido);
+  orderItemsById.set(id, [...(orderItemsById.get(id) || []), item]);
+}
+const orderItemCount = (items: any[]) => items.reduce((sum, item) => sum + Number(item.cantidad || 0), 0);
+const statusClass = (status: string) => `status-pill order-status-${String(status || "pendiente").toLowerCase()}`;
 const subscriptions = await rows<any>("SELECT s.*, p.nombre plan_name, p.precio FROM suscripcion_usuario s JOIN plan_suscripcion p ON p.id_plan=s.id_plan WHERE s.id_usuario=? ORDER BY s.fecha_creacion DESC", [Astro.locals.user.id]);
 const fullName = `${user.nombre || ""} ${user.apellido || ""}`.trim() || user.nombre_usuario;
 const initials = fullName.split(/\s+/).slice(0, 2).map((part: string) => part[0]).join("").toUpperCase();
@@ -91,7 +103,50 @@ const message = Astro.url.searchParams.get("message");
 
       <section class="profile-section-content profile-panel orders-panel" aria-labelledby="orders-title">
         <div class="panel-heading"><div><p class="section-kicker"><i class="bx bx-receipt"></i> Compras</p><h2 id="orders-title">Historial de compras</h2></div><span class="profile-status-pill">Total {money(totalSpent)}</span></div>
-        {orders.length ? <div class="orders-grid">{orders.map((order) => <article class="order-card profile-list-card"><div><h3>Pedido #{order.id_pedido}</h3><p>{order.fecha_creacion}</p></div><div class="order-card-meta"><span class="status-pill">{order.estado}</span><strong>{money(order.monto_total)}</strong></div></article>)}</div> : <div class="profile-empty"><i class="bx bx-shopping-bag"></i><h3>Aún no hay compras</h3><p>Cuando completes una compra, aparecerá aquí con su estado y total.</p><a class="btn" href="/products">Ir al catálogo</a></div>}
+        {orders.length ? <div class="orders-grid order-accordion-list">{orders.map((order) => {
+          const items = orderItemsById.get(Number(order.id_pedido)) || [];
+          const itemCount = orderItemCount(items);
+          return <details class="order-disclosure profile-list-card">
+            <summary class="order-summary">
+              <span class="order-summary-main">
+                <span class="order-receipt-icon"><i class="bx bx-receipt"></i></span>
+                <span><strong>Pedido #{order.id_pedido}</strong><small>{order.fecha_creacion}</small></span>
+              </span>
+              <span class="order-summary-meta">
+                <span class={statusClass(order.estado)}>{order.estado}</span>
+                <span>{itemCount} {itemCount === 1 ? "item" : "items"}</span>
+                <strong>{money(order.monto_total)}</strong>
+                <i class="bx bx-chevron-down" aria-hidden="true"></i>
+              </span>
+            </summary>
+            <div class="order-detail-body">
+              <div class="order-detail-meta" aria-label="Estado del pedido">
+                <span><i class="bx bx-package"></i> Pedido: <strong>{order.estado}</strong></span>
+                <span><i class="bx bx-credit-card"></i> Pago: <strong>{order.estado_pago}</strong></span>
+                <span><i class="bx bx-wallet"></i> Método: <strong>{order.metodo_pago || "stripe"}</strong></span>
+              </div>
+              {items.length ? <div class="order-items-list">{items.map((item) => {
+                const subtotal = Number(item.precio_unitario || 0) * Number(item.cantidad || 0);
+                return <article class="order-line-item">
+                  {item.url_imagen ? <img src={item.url_imagen} alt={item.nombre_item} loading="lazy" /> : <span class="order-line-placeholder"><i class="bx bx-package"></i></span>}
+                  <div class="order-line-copy">
+                    <h3>{item.nombre_item}</h3>
+                    {item.sku_item && <p>SKU {item.sku_item}</p>}
+                  </div>
+                  <div class="order-line-numbers">
+                    <span>Cant. <strong>{item.cantidad}</strong></span>
+                    <span>{money(item.precio_unitario)} c/u</span>
+                    <strong>{money(subtotal)}</strong>
+                  </div>
+                </article>;
+              })}</div> : <p class="order-detail-empty">Este pedido no tiene productos registrados.</p>}
+              <div class="order-detail-footer">
+                <span><i class="bx bx-map"></i> {order.direccion_envio || "Dirección no registrada"}</span>
+                <strong>Total {money(order.monto_total)}</strong>
+              </div>
+            </div>
+          </details>;
+        })}</div> : <div class="profile-empty"><i class="bx bx-shopping-bag"></i><h3>Aún no hay compras</h3><p>Cuando completes una compra, aparecerá aquí con su estado y total.</p><a class="btn" href="/products">Ir al catálogo</a></div>}
       </section>
     </div>
   </section>

@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { stripe, siteUrl, ensureStripeCustomer } from "@/lib/stripe";
+import { stripe, siteUrl, ensureStripeCustomer, fit360SetupCheckoutSettings } from "@/lib/stripe";
 
 export const POST: APIRoute = async ({ locals, redirect }) => {
   if (!locals.user) return redirect("/login");
@@ -7,6 +7,7 @@ export const POST: APIRoute = async ({ locals, redirect }) => {
 
   const customer = await ensureStripeCustomer(locals.user.id);
   const session = await stripe.checkout.sessions.create({
+    ...fit360SetupCheckoutSettings(),
     mode: "setup",
     customer,
     currency: "mxn",

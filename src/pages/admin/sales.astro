@@ -1,5 +1,56 @@
 ---
-import AdminLayout from "@/components/AdminLayout.astro"; import { rows,row } from "@/lib/db"; import { money } from "@/lib/format";
-const totals=await row<any>("SELECT COUNT(*) sales,COALESCE(SUM(monto),0) revenue,SUM(CASE WHEN estado='pendiente' THEN 1 ELSE 0 END) pending FROM pago");const payments=await rows<any>("SELECT p.*,u.nombre||' '||u.apellido usuario FROM pago p LEFT JOIN pedido o ON o.id_pedido=p.id_pedido LEFT JOIN usuario u ON u.id_usuario=o.id_usuario ORDER BY p.fecha_pago DESC LIMIT 100");
+import AdminLayout from "@/components/AdminLayout.astro";
+import { rows, row } from "@/lib/db";
+import { money } from "@/lib/format";
+
+const totals = await row<any>("SELECT COUNT(*) sales,COALESCE(SUM(CASE WHEN estado='completado' THEN monto ELSE 0 END),0) revenue,SUM(CASE WHEN estado='pendiente' THEN 1 ELSE 0 END) pending,SUM(CASE WHEN estado='fallido' THEN 1 ELSE 0 END) failed FROM pago");
+const payments = await rows<any>("SELECT p.*,u.nombre||' '||u.apellido usuario FROM pago p LEFT JOIN pedido o ON o.id_pedido=p.id_pedido LEFT JOIN usuario u ON u.id_usuario=o.id_usuario ORDER BY p.fecha_pago DESC LIMIT 100");
+const monthly = await rows<any>("SELECT strftime('%Y-%m',fecha_pago) month, COALESCE(SUM(CASE WHEN estado='completado' THEN monto ELSE 0 END),0) revenue, COUNT(*) payments FROM pago WHERE datetime(fecha_pago)>=datetime('now','-8 months') GROUP BY month ORDER BY month");
+const statusRows = await rows<any>("SELECT estado,COUNT(*) total FROM pago GROUP BY estado ORDER BY total DESC");
+const topProducts = await rows<any>("SELECT COALESCE(ip.nombre_snapshot,p.nombre) nombre,SUM(ip.cantidad) unidades,COALESCE(SUM(ip.cantidad*ip.precio_unitario),0) total FROM item_pedido ip LEFT JOIN producto p ON p.id_producto=ip.id_producto GROUP BY COALESCE(ip.nombre_snapshot,p.nombre) ORDER BY unidades DESC LIMIT 6");
+const maxRevenue = Math.max(1, ...monthly.map((item) => Number(item.revenue || 0)));
+const maxProductUnits = Math.max(1, ...topProducts.map((item) => Number(item.unidades || 0)));
 ---
-<AdminLayout title="Ventas y Estadísticas"><div class="stats-grid"><div class="stat-card"><h3>Pagos</h3><p>{totals.sales}</p></div><div class="stat-card"><h3>Ingresos</h3><p>{money(totals.revenue)}</p></div><div class="stat-card"><h3>Pendientes</h3><p>{totals.pending||0}</p></div></div><div class="admin-table"><table><thead><tr><th>ID</th><th>Usuario</th><th>Monto</th><th>Método</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>{payments.map((p)=><tr><td>{p.id_pago}</td><td>{p.usuario||"-"}</td><td>{money(p.monto)}</td><td>{p.metodo_pago}</td><td>{p.estado}</td><td>{p.fecha_pago}</td></tr>)}</tbody></table></div></AdminLayout>
+<AdminLayout title="Ventas y Estadísticas">
+  <div class="stats-grid stats-grid-compact">
+    <article class="stat-card"><i class="bx bxs-receipt"></i><span>Pagos</span><strong>{totals.sales || 0}</strong><small>Registros totales</small></article>
+    <article class="stat-card stat-card-accent"><i class="bx bx-trending-up"></i><span>Ingresos</span><strong>{money(totals.revenue || 0)}</strong><small>Completados</small></article>
+    <article class="stat-card"><i class="bx bx-time-five"></i><span>Pendientes</span><strong>{totals.pending || 0}</strong><small>Por confirmar</small></article>
+    <article class="stat-card"><i class="bx bx-x-circle"></i><span>Fallidos</span><strong>{totals.failed || 0}</strong><small>Requieren revisión</small></article>
+  </div>
+
+  <section class="admin-dashboard-grid sales-grid">
+    <article class="admin-panel chart-panel wide-panel">
+      <div class="panel-heading"><div><p class="admin-kicker">Ventas</p><h2>Ingresos por mes</h2></div><span>{monthly.length} periodos</span></div>
+      <div class="bar-chart tall" aria-label="Ingresos mensuales">
+        {monthly.length ? monthly.map((item) => {
+          const value = Number(item.revenue || 0);
+          const pct = Math.max(6, Math.round((value / maxRevenue) * 100));
+          return <div class="bar-column" style={`--bar:${pct}%`}><span>{money(value)}</span><i></i><small>{item.month}</small></div>;
+        }) : <p class="admin-empty">Sin pagos registrados.</p>}
+      </div>
+    </article>
+
+    <article class="admin-panel">
+      <div class="panel-heading"><div><p class="admin-kicker">Estado</p><h2>Pagos por resultado</h2></div></div>
+      <div class="status-stack">
+        {statusRows.map((item) => <div><span class={`status-pill ${item.estado}`}>{item.estado}</span><strong>{item.total}</strong></div>)}
+      </div>
+    </article>
+
+    <article class="admin-panel wide-panel">
+      <div class="panel-heading"><div><p class="admin-kicker">Productos</p><h2>Más vendidos</h2></div></div>
+      <div class="rank-list">
+        {topProducts.map((item, index) => {
+          const pct = Math.max(4, Math.round((Number(item.unidades || 0) / maxProductUnits) * 100));
+          return <div class="rank-row" style={`--rank:${pct}%`}><span>{index + 1}</span><strong>{item.nombre || "Sin nombre"}</strong><i></i><em>{item.unidades} uds.</em></div>;
+        })}
+      </div>
+    </article>
+  </section>
+
+  <div class="admin-table">
+    <h2>Pagos recientes</h2>
+    <table><thead><tr><th>ID</th><th>Usuario</th><th>Monto</th><th>Método</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>{payments.map((p)=><tr><td>{p.id_pago}</td><td>{p.usuario||"-"}</td><td>{money(p.monto)}</td><td>{p.metodo_pago}</td><td><span class={`status-pill ${p.estado}`}>{p.estado}</span></td><td>{p.fecha_pago}</td></tr>)}</tbody></table>
+  </div>
+</AdminLayout>

@@ -1,8 +1,131 @@
 ---
-import Layout from "@/components/Layout.astro"; import Header from "@/components/Header.astro"; import Footer from "@/components/Footer.astro"; import { row, rows } from "@/lib/db"; import { assetUrl } from "@/lib/format";
+import Layout from "@/components/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import { row, rows } from "@/lib/db";
+import { assetUrl } from "@/lib/format";
+
 if (!Astro.locals.user) return Astro.redirect("/login");
-const service = await row<any>("SELECT * FROM servicio WHERE id_servicio=? AND esta_activo=1", [Number(Astro.params.id)]); if (!service) return Astro.redirect("/#services");
-const access = await row("SELECT 1 FROM suscripcion_usuario s JOIN plan_servicio ps ON ps.id_plan=s.id_plan WHERE s.id_usuario=? AND s.estado='activa' AND date(s.fecha_fin)>=date('now') AND ps.id_servicio=?", [Astro.locals.user.id, service.id_servicio]); if (!access) return Astro.redirect("/#plans");
+const service = await row<any>("SELECT * FROM servicio WHERE id_servicio=? AND esta_activo=1", [Number(Astro.params.id)]);
+if (!service) return Astro.redirect("/#services");
+const access = await row("SELECT 1 FROM suscripcion_usuario s JOIN plan_servicio ps ON ps.id_plan=s.id_plan WHERE s.id_usuario=? AND s.estado='activa' AND date(s.fecha_fin)>=date('now') AND ps.id_servicio=?", [Astro.locals.user.id, service.id_servicio]);
+if (!access) return Astro.redirect("/#plans");
 const gallery = await rows<any>("SELECT * FROM imagen_servicio WHERE id_servicio=?", [service.id_servicio]);
+const benefits = String(service.beneficios || "").split(new RegExp("\\\\r\\\\n|\\r?\\n|,\\s*")) .map((benefit) => benefit.trim()).filter(Boolean);
+const serviceImage = assetUrl(service.url_imagen);
+const serviceVideo = service.url_video ? assetUrl(service.url_video) : "";
+const duration = Number(service.duracion_minutos || 0);
+const description = `${service.nombre}: ${String(service.descripcion || "servicio Fit 360").slice(0, 150)}`;
+const serviceImageAlt = `Servicio Fit 360: ${service.nombre}`;
 ---
-<Layout title={`Fit 360 - ${service.nombre}`}><Header /><section class="service-details"><div class="service-hero"><img src={assetUrl(service.url_imagen)} alt={service.nombre} /><div><h1>{service.nombre}</h1><p>{service.descripcion}</p><p><strong>Duración:</strong> {service.duracion_minutos} minutos</p></div></div><video controls src={assetUrl(service.url_video)}></video><div class="benefits-list">{String(service.beneficios).split(/\r?\n/).map((b) => <div class="benefit-item"><i class="bx bx-check"></i><span>{b}</span></div>)}</div><div class="service-gallery">{gallery.map((image) => <img src={assetUrl(image.url_imagen)} alt={service.nombre} />)}</div></section><Footer /></Layout>
+<Layout title={`${service.nombre} | Fit 360`} description={description} image={serviceImage} canonicalPath={`/services/${service.id_servicio}`} noindex>
+  <Header />
+  <main class="service-detail-page">
+    <nav class="breadcrumbs service-breadcrumbs" aria-label="Ruta de navegación"><a href="/">Inicio</a><i class="bx bx-chevron-right"></i><a href="/#services">Servicios</a><i class="bx bx-chevron-right"></i><span>{service.nombre}</span></nav>
+
+    <section class="service-detail-hero" aria-labelledby="service-title">
+      <div class="service-detail-media">
+        <button class="service-image-trigger service-hero-trigger" type="button" data-service-lightbox data-src={serviceImage} data-alt={serviceImageAlt} aria-label={`Ver imagen de ${service.nombre} en grande`}>
+          <img src={serviceImage} alt={serviceImageAlt} />
+          <span class="service-image-zoom" aria-hidden="true"><i class="bx bx-expand"></i></span>
+        </button>
+        <div class="service-media-badge"><i class="bx bx-lock-open-alt"></i><span>Incluido en tu plan</span></div>
+      </div>
+      <div class="service-detail-copy">
+        <p class="section-kicker"><i class="bx bx-dumbbell"></i> Sesión guiada</p>
+        <h1 id="service-title">{service.nombre}</h1>
+        <p class="service-lead">{service.descripcion}</p>
+        <div class="service-meta-strip" aria-label="Resumen del servicio">
+          <span><i class="bx bx-time-five"></i><strong>{duration || "-"}</strong><small>minutos</small></span>
+          <span><i class="bx bx-target-lock"></i><strong>360</strong><small>método</small></span>
+          <span><i class="bx bx-user-check"></i><strong>Activo</strong><small>acceso</small></span>
+        </div>
+        <div class="service-actions">
+          {serviceVideo && <a class="btn" href="#service-video"><i class="bx bx-play-circle"></i> Ver sesión</a>}
+          <a class="btn-secondary" href="/#plans"><i class="bx bx-credit-card"></i> Revisar plan</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="service-training-grid" aria-label="Contenido del servicio">
+      <article class="service-panel service-video-panel" id="service-video">
+        <div class="service-panel-heading"><p class="section-kicker"><i class="bx bx-video"></i> Video</p><h2>Entrena con la secuencia completa</h2></div>
+        {serviceVideo ? <video controls preload="metadata" poster={serviceImage} src={serviceVideo}></video> : <div class="service-empty-media"><i class="bx bx-video-off"></i><p>Este servicio aún no tiene video asignado.</p></div>}
+      </article>
+
+      <aside class="service-panel service-session-card">
+        <div class="service-panel-heading"><p class="section-kicker"><i class="bx bx-clipboard"></i> Enfoque</p><h2>Cómo aprovecharlo</h2></div>
+        <ul>
+          <li><i class="bx bx-check-shield"></i><span>Revisa la técnica antes de subir intensidad.</span></li>
+          <li><i class="bx bx-timer"></i><span>Reserva el bloque completo de {duration || 45} minutos.</span></li>
+          <li><i class="bx bx-refresh"></i><span>Repite la sesión y compara tu control de movimiento.</span></li>
+        </ul>
+      </aside>
+    </section>
+
+    {benefits.length > 0 && <section class="service-benefits-section" aria-labelledby="benefits-title">
+      <div class="service-section-head">
+        <p class="section-kicker"><i class="bx bx-list-check"></i> Beneficios</p>
+        <h2 id="benefits-title">Qué desarrolla esta sesión</h2>
+      </div>
+      <div class="service-benefits-grid">
+        {benefits.map((benefit, index) => <article><span>{String(index + 1).padStart(2, "0")}</span><i class="bx bx-check"></i><p>{benefit}</p></article>)}
+      </div>
+    </section>}
+
+    {gallery.length > 0 && <section class="service-gallery-section" aria-labelledby="gallery-title">
+      <div class="service-section-head">
+        <p class="section-kicker"><i class="bx bx-image"></i> Galería</p>
+        <h2 id="gallery-title">Referencias visuales del entrenamiento</h2>
+      </div>
+      <div class="service-gallery-grid">
+        {gallery.map((image, index) => {
+          const imageSrc = assetUrl(image.url_imagen);
+          const imageAlt = `${service.nombre} referencia ${index + 1}`;
+          return <button class="service-image-trigger service-gallery-trigger" type="button" data-service-lightbox data-src={imageSrc} data-alt={imageAlt} aria-label={`Ver ${imageAlt} en grande`}>
+            <img src={imageSrc} alt={imageAlt} loading="lazy" />
+            <span class="service-image-zoom" aria-hidden="true"><i class="bx bx-expand"></i></span>
+          </button>;
+        })}
+      </div>
+    </section>}
+
+    <dialog class="service-lightbox" id="service-lightbox" aria-label="Imagen ampliada del servicio">
+      <button class="service-lightbox-close" type="button" aria-label="Cerrar imagen"><i class="bx bx-x"></i></button>
+      <img id="service-lightbox-image" alt="" />
+    </dialog>
+  </main>
+  <Footer />
+<script is:inline>
+  const serviceLightbox = document.querySelector("#service-lightbox");
+  const serviceLightboxImage = document.querySelector("#service-lightbox-image");
+  const serviceLightboxClose = document.querySelector(".service-lightbox-close");
+
+  const closeServiceLightbox = () => {
+    if (serviceLightbox?.open) serviceLightbox.close();
+    document.documentElement.style.overflow = "";
+  };
+
+  document.querySelectorAll("[data-service-lightbox]").forEach((trigger) => {
+    trigger.addEventListener("click", () => {
+      if (!serviceLightbox || !serviceLightboxImage) return;
+      serviceLightboxImage.src = trigger.dataset.src || "";
+      serviceLightboxImage.alt = trigger.dataset.alt || "";
+      if (typeof serviceLightbox.showModal === "function") {
+        serviceLightbox.showModal();
+        document.documentElement.style.overflow = "hidden";
+      }
+    });
+  });
+
+  serviceLightboxClose?.addEventListener("click", closeServiceLightbox);
+  serviceLightbox?.addEventListener("click", (event) => {
+    if (event.target === serviceLightbox) closeServiceLightbox();
+  });
+  serviceLightbox?.addEventListener("close", () => {
+    document.documentElement.style.overflow = "";
+    serviceLightboxImage?.removeAttribute("src");
+  });
+</script>
+</Layout>
+

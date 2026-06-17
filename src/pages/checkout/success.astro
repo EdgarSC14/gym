@@ -1,4 +1,58 @@
 ---
-import Layout from "@/components/Layout.astro"; import Header from "@/components/Header.astro"; import Footer from "@/components/Footer.astro";
+import Layout from "@/components/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import { db } from "@/lib/db";
+import { stripe } from "@/lib/stripe";
+import { activateSubscriptionFromCheckoutSession } from "@/lib/stripe-subscriptions";
+
+const type = Astro.url.searchParams.get("type");
+const sessionId = Astro.url.searchParams.get("session_id");
+if (type === "subscription" && sessionId && Astro.locals.user && stripe) {
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const metadata = session.metadata || {};
+    if (session.status === "complete" && metadata.type === "subscription" && Number(metadata.user_id) === Astro.locals.user.id) {
+      const tx = await db.transaction("write");
+      try {
+        await activateSubscriptionFromCheckoutSession(tx, session);
+        await tx.commit();
+      } catch (error) {
+        await tx.rollback();
+        console.error(error);
+      }
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}
 ---
-<Layout title="Pago recibido - Fit 360"><Header /><section class="checkout-section"><div class="success-message"><h1>Pago recibido</h1><p>Stripe confirmó tu operación. El estado se actualizará mediante webhook.</p><a class="btn" href="/profile">Ver mi perfil</a></div></section><Footer /><script>localStorage.removeItem("fit360Cart");</script></Layout>
+<Layout title="Pago recibido - Fit 360"><Header /><section class="checkout-section"><div class="success-message"><h1>Pago recibido</h1><p>Stripe confirmó tu operación. El estado se actualizará mediante webhook.</p><a class="btn" href="/profile">Ver mi perfil</a></div></section><Footer /><script is:inline>
+  const params = new URLSearchParams(window.location.search);
+  const shouldClearCart = params.get("type") !== "subscription";
+  const clearLocalCart = () => {
+    localStorage.removeItem("fit360Cart");
+    document.querySelectorAll(".cart-count").forEach((node) => { node.textContent = "0"; });
+    window.dispatchEvent(new Event("fit360-cart-updated"));
+  };
+
+  if (shouldClearCart) {
+    clearLocalCart();
+    fetch("/api/cart", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ items: [] }),
+      keepalive: true,
+    }).finally(() => {
+      clearLocalCart();
+      setTimeout(clearLocalCart, 800);
+    });
+  } else if (params.get("session_id")) {
+    fetch("/api/stripe/sync-checkout", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ sessionId: params.get("session_id") }),
+      keepalive: true,
+    }).catch(() => {});
+  }
+</script></Layout>

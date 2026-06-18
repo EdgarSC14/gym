@@ -2126,3 +2126,243 @@ body.modal-open {
         height: 160px;
     }
 }
+
+
+/* Fit 360 full responsive admin hardening layer */
+.admin-container,
+.admin-main,
+.admin-header,
+.admin-toolbar,
+.admin-command-panel,
+.admin-dashboard-grid,
+.sales-grid,
+.stats-grid,
+.stats-grid-compact,
+.form-grid,
+.admin-table,
+.admin-table-inner,
+.admin-modal-content,
+.admin-media-picker {
+    min-width: 0;
+}
+
+.admin-main {
+    width: 100%;
+}
+
+.menu-toggle {
+    align-items: center;
+    background: var(--admin-ink);
+    border: 1px solid rgba(255, 30, 0, 0.34);
+    border-radius: 8px;
+    color: var(--admin-red);
+    display: none;
+    height: 4.4rem;
+    justify-content: center;
+    left: 1rem;
+    position: fixed;
+    top: 1rem;
+    width: 4.4rem;
+    z-index: 1300;
+}
+
+.admin-table-inner {
+    -webkit-overflow-scrolling: touch;
+}
+
+.admin-table-inner table {
+    border-collapse: collapse;
+}
+
+.admin-form input,
+.admin-form select,
+.admin-form textarea,
+.admin-toolbar .btn,
+.admin-command-actions .btn,
+.admin-command-actions .btn-secondary,
+.table-actions .btn,
+.table-actions button {
+    min-width: 0;
+}
+
+@media (max-width: 1180px) {
+    .admin-sidebar {
+        width: 260px;
+    }
+
+    .stats-grid,
+    .stats-grid-compact {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .admin-dashboard-grid,
+    .sales-grid,
+    .chart-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width: 820px) {
+    .menu-toggle {
+        display: grid;
+    }
+
+    .admin-container {
+        display: block;
+    }
+
+    .admin-sidebar {
+        bottom: 0;
+        box-shadow: 18px 0 50px rgba(17, 23, 19, 0.2);
+        left: 0;
+        max-width: calc(100vw - 4rem);
+        overflow-y: auto;
+        position: fixed;
+        top: 0;
+        transform: translateX(-105%);
+        transition: transform 220ms ease;
+        width: min(30rem, calc(100vw - 4rem));
+        z-index: 1250;
+    }
+
+    .admin-sidebar.active {
+        transform: translateX(0);
+    }
+
+    .admin-main {
+        margin-left: 0;
+        padding: 7.2rem 1.4rem 2.4rem;
+        width: 100%;
+    }
+
+    .admin-header,
+    .admin-toolbar,
+    .admin-command-panel,
+    .admin-table-heading,
+    .panel-heading {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 1.2rem;
+    }
+
+    .admin-user-pill,
+    .admin-toolbar .btn,
+    .admin-command-actions,
+    .admin-command-actions .btn,
+    .admin-command-actions .btn-secondary,
+    .admin-table-heading .search-input {
+        width: 100%;
+    }
+
+    .admin-command-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .form-grid,
+    .form-row,
+    .admin-media-picker {
+        grid-template-columns: 1fr !important;
+    }
+
+    .form-grid .span-2,
+    .form-group.span-2 {
+        grid-column: auto;
+    }
+
+    .form-actions,
+    .table-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .form-actions .btn,
+    .table-actions .btn,
+    .table-actions button,
+    .admin-table td form {
+        width: 100%;
+    }
+
+    .admin-modal {
+        padding: 1rem;
+    }
+
+    .admin-modal-content {
+        max-height: calc(100dvh - 2rem);
+        width: 100%;
+    }
+
+    .admin-modal .modal-header {
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .admin-modal .modal-body {
+        max-height: calc(100dvh - 11rem);
+        padding: 1.4rem;
+    }
+
+    .admin-table table {
+        min-width: 72rem;
+    }
+}
+
+@media (max-width: 560px) {
+    .admin-main {
+        padding-inline: 1rem;
+    }
+
+    .admin-header h1,
+    .admin-command-panel h2,
+    .admin-toolbar h2,
+    .admin-form h2,
+    .admin-table h2,
+    .admin-panel h2 {
+        font-size: clamp(2.2rem, 9vw, 3.4rem);
+        overflow-wrap: anywhere;
+    }
+
+    .stats-grid,
+    .stats-grid-compact,
+    .summary-grid,
+    .quick-actions-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .bar-chart {
+        gap: 0.7rem;
+        overflow-x: auto;
+        padding-bottom: 0.6rem;
+    }
+
+    .bar-column {
+        min-width: 5.4rem;
+    }
+
+    .rank-row {
+        grid-template-columns: 2.8rem minmax(0, 1fr) 5.8rem !important;
+    }
+
+    .rank-row i {
+        grid-column: 2 / -1;
+    }
+
+    .admin-table table {
+        min-width: 64rem;
+    }
+
+    .admin-table th,
+    .admin-table td {
+        max-width: 22rem;
+    }
+
+    .admin-table-media {
+        grid-template-columns: 4.4rem minmax(9rem, 1fr);
+        min-width: 15rem;
+    }
+
+    .admin-table-media-frame {
+        height: 4.4rem;
+        width: 4.4rem;
+    }
+}

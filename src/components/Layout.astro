@@ -7,6 +7,8 @@ interface Props {
   noindex?: boolean;
   admin?: boolean;
   schema?: unknown | unknown[];
+  preloadImage?: string;
+  preconnectOrigins?: string[];
 }
 
 const {
@@ -17,6 +19,8 @@ const {
   noindex = false,
   admin = false,
   schema,
+  preloadImage,
+  preconnectOrigins = [],
 } = Astro.props;
 
 const site = (import.meta.env.PUBLIC_SITE_URL || Astro.url.origin || "https://fit360.mx").replace(/\/$/, "");
@@ -45,7 +49,8 @@ const schemaItems = Array.isArray(schema) ? schema : schema ? [schema] : [];
     <meta name="twitter:image" content={absoluteImage} />
     <meta name="theme-color" content="#FF1E00" />
     <link rel="preconnect" href="https://unpkg.com" />
-    <link rel="preconnect" href="https://images.unsplash.com" />
+    {preconnectOrigins.map((origin) => <link rel="preconnect" href={origin} />)}
+    {preloadImage && <link rel="preload" href={preloadImage} as="image" fetchpriority="high" />}
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
     <link rel="stylesheet" href={admin ? "/styles/admin-style.css" : "/styles/style.css"} />
     <title>{title}</title>

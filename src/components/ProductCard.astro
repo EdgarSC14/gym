@@ -4,7 +4,7 @@ const { product } = Astro.props;
 const availableStock = Math.max(0, Number(product.cantidad_stock || 0) - Number(product.stock_reservado || 0));
 ---
 <article class="review-item" data-product={JSON.stringify(product)}>
-  <img src={assetUrl(product.url_imagen)} alt={`${product.nombre} Fit 360`} loading="lazy" />
+  <img src={assetUrl(product.url_imagen)} alt={`${product.nombre} Fit 360`} width="520" height="520" loading="lazy" decoding="async" />
   <h2>{product.nombre}</h2>
   {product.nombre_categoria && <div class="product-category">{product.nombre_categoria}</div>}
   <div class="rating" aria-label={`Calificación ${product.calificacion} de 5`}>

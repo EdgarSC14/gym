@@ -3,8 +3,8 @@ const user = Astro.locals.user;
 ---
 <header>
   <a href="/#home" class="logo">Fit <span>360</span></a>
-  <div class="bx bx-menu" id="menu-icon"></div>
-  <ul class="navbar">
+  <button class="bx bx-menu" id="menu-icon" type="button" aria-label="Abrir menú" aria-controls="primary-navigation" aria-expanded="false"></button>
+  <ul class="navbar" id="primary-navigation">
     <li><a href="/#home">Inicio</a></li>
     <li><a href="/#services">Servicios</a></li>
     <li><a href="/#about">Acerca de Nosotros</a></li>
@@ -71,8 +71,47 @@ const user = Astro.locals.user;
       }
     };
 
+    const scheduleRemoteCartSync = () => {
+      if ("requestIdleCallback" in window) {
+        window.requestIdleCallback(syncRemoteCart, { timeout: 1500 });
+        return;
+      }
+
+      window.setTimeout(syncRemoteCart, 500);
+    };
+
+    const menuButton = document.querySelector("#menu-icon");
+    const navbar = document.querySelector("#primary-navigation");
+    const closeMenu = () => {
+      navbar?.classList.remove("open");
+      menuButton?.setAttribute("aria-expanded", "false");
+      menuButton?.classList.add("bx-menu");
+      menuButton?.classList.remove("bx-x");
+    };
+    const toggleMenu = () => {
+      const isOpen = navbar?.classList.toggle("open") || false;
+      menuButton?.setAttribute("aria-expanded", String(isOpen));
+      menuButton?.classList.toggle("bx-menu", !isOpen);
+      menuButton?.classList.toggle("bx-x", isOpen);
+    };
+
+    menuButton?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      toggleMenu();
+    });
+    navbar?.addEventListener("click", (event) => {
+      if (event.target instanceof HTMLAnchorElement) closeMenu();
+    });
+    document.addEventListener("click", (event) => {
+      if (!navbar?.classList.contains("open")) return;
+      if (event.target instanceof Node && !navbar.contains(event.target) && !menuButton?.contains(event.target)) closeMenu();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeMenu();
+    });
+
     paintLocalCount();
-    syncRemoteCart();
+    scheduleRemoteCartSync();
     window.addEventListener("fit360-cart-updated", paintLocalCount);
     window.addEventListener("storage", (event) => {
       if (event.key === key) paintLocalCount();

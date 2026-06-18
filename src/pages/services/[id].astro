@@ -26,7 +26,7 @@ const serviceImageAlt = `Servicio Fit 360: ${service.nombre}`;
     <section class="service-detail-hero" aria-labelledby="service-title">
       <div class="service-detail-media">
         <button class="service-image-trigger service-hero-trigger" type="button" data-service-lightbox data-src={serviceImage} data-alt={serviceImageAlt} aria-label={`Ver imagen de ${service.nombre} en grande`}>
-          <img src={serviceImage} alt={serviceImageAlt} />
+          <img src={serviceImage} alt={serviceImageAlt} width="900" height="675" loading="eager" fetchpriority="high" decoding="sync" />
           <span class="service-image-zoom" aria-hidden="true"><i class="bx bx-expand"></i></span>
         </button>
         <div class="service-media-badge"><i class="bx bx-lock-open-alt"></i><span>Incluido en tu plan</span></div>

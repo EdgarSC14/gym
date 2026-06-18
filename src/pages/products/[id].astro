@@ -53,7 +53,7 @@ const schema = [
   <section class="service-details product-detail-page" aria-labelledby="product-title">
     <nav class="breadcrumbs" aria-label="Ruta de navegación"><a href="/">Inicio</a><i class="bx bx-chevron-right"></i><a href="/products">Productos</a><i class="bx bx-chevron-right"></i><span>{product.nombre}</span></nav>
     <div class="service-hero product-hero" data-product={JSON.stringify(product)}>
-      <div class="product-visual"><img src={image} alt={`${product.nombre} de Fit 360`} width="760" height="620" /></div>
+      <div class="product-visual"><img src={image} alt={`${product.nombre} de Fit 360`} width="760" height="570" loading="eager" fetchpriority="high" decoding="sync" /></div>
       <div class="product-detail-copy">
         {product.nombre_categoria && <p class="product-category"><i class="bx bx-purchase-tag"></i>{product.nombre_categoria}</p>}
         <h1 id="product-title">{product.nombre}</h1>

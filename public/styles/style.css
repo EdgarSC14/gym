@@ -5103,6 +5103,16 @@ span {
     outline-offset: 3px;
 }
 
+.reveal-section,
+.product-comments,
+.service-training-grid,
+.service-benefits-section,
+.service-gallery-section,
+footer {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 720px;
+}
+
 @media (max-width: 1080px) {
     .home,
     .about,
@@ -7387,3 +7397,496 @@ header .cart-count {
     }
 }
 
+
+
+/* Fit 360 full responsive hardening layer */
+img,
+video,
+svg,
+canvas {
+    max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+    max-width: 100%;
+}
+
+header,
+header .navbar,
+header .top-btn,
+header .nav-cart,
+.hero-actions,
+.product-actions,
+.service-actions,
+.cart-panel-head,
+.panel-heading,
+.profile-card-heading,
+.checkout-cart-total,
+.inline-actions {
+    min-width: 0;
+}
+
+header {
+    gap: 1.4rem;
+}
+
+#menu-icon {
+    appearance: none;
+    align-items: center;
+    background: rgba(255, 30, 0, 0.1);
+    border: 1px solid rgba(255, 30, 0, 0.34);
+    border-radius: 8px;
+    justify-content: center;
+    line-height: 1;
+}
+
+header .top-btn {
+    align-items: center;
+    display: flex;
+    gap: 0.8rem;
+    justify-content: flex-end;
+    min-width: 0;
+}
+
+header .top-btn form {
+    margin: 0;
+}
+
+.auth-section,
+.checkout-section,
+.profile-section,
+.service-details,
+.products-catalog {
+    min-height: auto;
+}
+
+.auth-container,
+.auth-content,
+.profile-container,
+.cart-checkout-shell,
+.subscription-checkout-shell,
+.product-detail-page,
+.service-detail-page,
+.review-box,
+.services,
+.about,
+.plans,
+.review {
+    max-width: 100%;
+}
+
+.auth-content,
+.profile-dashboard .profile-card,
+.profile-dashboard .profile-panel,
+.cart-panel,
+.cart-summary-card,
+.subscription-plan-card,
+.subscription-payment-card,
+.product-comments,
+.service-panel,
+.service-benefits-section,
+.service-gallery-section {
+    min-width: 0;
+}
+
+.auth-form .input-group,
+.auth-form input,
+.auth-form select,
+.auth-form textarea,
+.profile-dashboard input,
+.profile-dashboard select,
+.profile-dashboard textarea,
+.cart-panel button,
+.subscription-payment-card button,
+.product-review-form textarea {
+    min-width: 0;
+}
+
+.category-filters,
+.hero-actions,
+.product-actions,
+.service-actions,
+.admin-command-actions,
+.inline-actions {
+    flex-wrap: wrap;
+}
+
+.wrapper,
+.services-content,
+.plans-content,
+.products-grid,
+.profile-main-grid,
+.profile-sections-grid,
+.subscription-checkout-grid,
+.cart-layout,
+.service-detail-hero,
+.service-training-grid,
+.service-meta-strip,
+.service-gallery-grid {
+    min-width: 0;
+}
+
+.order-summary,
+.order-line-item,
+.checkout-cart-item,
+.profile-list-card,
+.payment-method-card,
+.subscription-card {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 1180px) {
+    header {
+        padding-inline: 4%;
+    }
+
+    header .navbar a {
+        margin-left: 0;
+        white-space: nowrap;
+    }
+
+    .home,
+    .about,
+    .product-hero,
+    .service-hero,
+    .service-detail-hero,
+    .service-training-grid,
+    .cart-layout,
+    .subscription-checkout-grid,
+    .profile-hero-card,
+    .profile-main-grid,
+    .profile-sections-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .home-content,
+    .product-detail-copy,
+    .service-detail-copy,
+    .subscription-copy,
+    .cart-page-head {
+        max-width: 100%;
+    }
+
+    .home-img,
+    .about-img,
+    .product-visual,
+    .service-detail-media {
+        width: 100%;
+    }
+
+    .cart-summary-card,
+    .subscription-payment-card {
+        position: static;
+    }
+}
+
+@media (max-width: 920px) {
+    html {
+        font-size: 58%;
+    }
+
+    section {
+        padding-inline: 5%;
+    }
+
+    header {
+        align-items: center;
+        flex-wrap: wrap;
+        padding: 1.2rem 5%;
+    }
+
+    .logo {
+        flex: 1 1 auto;
+        min-width: max-content;
+    }
+
+    #menu-icon {
+        display: grid;
+        flex: 0 0 4.4rem;
+        height: 4.4rem;
+        order: 4;
+        width: 4.4rem;
+    }
+
+    header .nav-cart {
+        flex: 0 0 4.4rem;
+        height: 4.4rem;
+        margin-left: auto;
+        order: 2;
+        width: 4.4rem;
+    }
+
+    header .top-btn {
+        flex: 0 1 auto;
+        order: 3;
+    }
+
+    header .navbar,
+    header .navbar.open {
+        max-width: none;
+    }
+
+    header .navbar {
+        background: rgba(9, 11, 10, 0.98);
+        border: 1px solid rgba(255, 30, 0, 0.28);
+        border-radius: 8px;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+        display: none;
+        gap: 0.4rem;
+        grid-template-columns: 1fr;
+        left: 5%;
+        max-height: calc(100dvh - 9rem);
+        overflow-y: auto;
+        padding: 1rem;
+        position: fixed;
+        right: 5%;
+        top: 7.4rem;
+        z-index: 1001;
+    }
+
+    header .navbar.open {
+        display: grid;
+    }
+
+    header .navbar li,
+    header .navbar a {
+        width: 100%;
+    }
+
+    header .navbar a {
+        border: 0;
+        border-radius: 8px;
+        display: block;
+        font-size: 1.55rem;
+        margin: 0;
+        padding: 1.2rem 1.4rem;
+    }
+
+    header .navbar a::after {
+        display: none;
+    }
+
+    header .navbar a:hover,
+    header .navbar a.active {
+        background: rgba(255, 30, 0, 0.12);
+        border: 0;
+    }
+
+    .hero-actions,
+    .product-actions,
+    .service-actions,
+    .cart-panel-head,
+    .panel-heading,
+    .profile-card-heading,
+    .comments-heading,
+    .catalog-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .hero-actions .btn,
+    .hero-actions .btn-secondary,
+    .product-actions .btn,
+    .product-actions .btn-secondary,
+    .service-actions .btn,
+    .service-actions .btn-secondary,
+    .cart-panel-head button,
+    .panel-heading .btn,
+    .panel-heading .btn-secondary,
+    .products-catalog .review-box > .btn {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .services-content,
+    .plans-content,
+    .wrapper,
+    .products-grid,
+    .hero-metrics,
+    .profile-quick-stats,
+    .profile-form-grid,
+    .service-meta-strip,
+    .service-gallery-grid,
+    .service-benefits-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .profile-form-grid .span-2,
+    .form-grid .span-2 {
+        grid-column: auto;
+    }
+
+    .review-item,
+    .service-box,
+    .box,
+    .profile-list-card,
+    .checkout-cart-item,
+    .order-line-item {
+        width: 100%;
+    }
+}
+
+@media (max-width: 640px) {
+    html {
+        font-size: 56%;
+    }
+
+    section {
+        padding: 10.5rem 4% 5rem;
+    }
+
+    header {
+        gap: 0.8rem;
+    }
+
+    header .top-btn {
+        flex: 1 0 100%;
+        justify-content: flex-start;
+        order: 5;
+        overflow-x: auto;
+        padding-top: 0.2rem;
+    }
+
+    header .top-btn .nav-btn,
+    header .username-link {
+        display: inline-flex;
+        flex: 0 0 auto;
+        min-height: 3.9rem;
+        white-space: nowrap;
+    }
+
+    header .username-link span {
+        display: inline;
+        max-width: 16rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    header .navbar {
+        top: 11.8rem;
+    }
+
+    .home,
+    .profile-dashboard,
+    .cart-checkout,
+    .subscription-checkout,
+    .service-detail-page {
+        padding-top: 12.5rem;
+    }
+
+    .home-content h1,
+    .product-detail-copy h1,
+    .service-detail-copy h1,
+    .profile-hero-copy h1,
+    .cart-page-head h1,
+    .subscription-copy h1 {
+        font-size: clamp(3.2rem, 12vw, 4.8rem);
+        overflow-wrap: anywhere;
+    }
+
+    .home-img img,
+    .about-img img,
+    .product-visual img,
+    .service-detail-media,
+    .service-detail-media img {
+        min-height: 0;
+    }
+
+    .checkout-cart-item {
+        grid-template-columns: 7.2rem minmax(0, 1fr) !important;
+    }
+
+    .checkout-cart-total {
+        grid-column: 1 / -1;
+        grid-template-columns: 1fr;
+        justify-items: stretch;
+        text-align: left;
+    }
+
+    .cart-quantity-controls {
+        width: fit-content;
+    }
+
+    .order-summary-meta,
+    .order-line-numbers {
+        grid-template-columns: 1fr !important;
+        justify-items: start;
+        text-align: left;
+    }
+
+    .order-line-item {
+        grid-template-columns: 4.2rem minmax(0, 1fr) !important;
+    }
+
+    .order-line-numbers {
+        grid-column: 1 / -1;
+    }
+
+    .profile-list-card,
+    .payment-method-card,
+    .subscription-card {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .profile-list-card form,
+    .profile-list-card button,
+    .inline-actions,
+    .inline-actions button {
+        width: 100%;
+    }
+
+    .category-filters {
+        display: grid;
+        grid-template-columns: 1fr;
+        width: 100%;
+    }
+
+    .filter-btn {
+        justify-content: center;
+        width: 100%;
+    }
+}
+
+@media (max-width: 420px) {
+    header {
+        padding-inline: 3.5%;
+    }
+
+    .logo {
+        font-size: 2.45rem;
+    }
+
+    header .nav-cart,
+    #menu-icon {
+        flex-basis: 4rem;
+        height: 4rem;
+        width: 4rem;
+    }
+
+    header .username-link span {
+        max-width: 12rem;
+    }
+
+    .btn,
+    .btn-secondary,
+    .nav-btn,
+    .add-to-cart,
+    .filter-btn {
+        min-width: 0;
+        white-space: normal;
+    }
+
+    .checkout-cart-item {
+        grid-template-columns: 1fr !important;
+    }
+
+    .checkout-cart-item img {
+        width: 100% !important;
+    }
+}

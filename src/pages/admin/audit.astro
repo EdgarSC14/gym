@@ -1,4 +1,20 @@
 ---
-import AdminLayout from "@/components/AdminLayout.astro";import { rows } from "@/lib/db";const logs=await rows<any>("SELECT a.*,u.nombre_usuario actor FROM audit_log a LEFT JOIN usuario u ON u.id_usuario=a.id_usuario_actor ORDER BY a.fecha_creacion DESC LIMIT 250");
+import AdminLayout from "@/components/AdminLayout.astro";
+import { rows } from "@/lib/db";
+
+const logs = await rows<any>("SELECT a.*,u.nombre_usuario actor FROM audit_log a LEFT JOIN usuario u ON u.id_usuario=a.id_usuario_actor ORDER BY a.fecha_creacion DESC LIMIT 250");
 ---
-<AdminLayout title="Auditoría"><div class="admin-table"><table><thead><tr><th>Fecha</th><th>Actor</th><th>Acción</th><th>Entidad</th><th>ID</th><th>IP</th></tr></thead><tbody>{logs.map(log=><tr><td>{log.fecha_creacion}</td><td>{log.actor||"Sistema"}</td><td>{log.accion}</td><td>{log.entidad}</td><td>{log.entidad_id}</td><td>{log.ip_address||"-"}</td></tr>)}</tbody></table></div></AdminLayout>
+<AdminLayout title="Auditoría">
+  <div class="admin-table">
+    <div class="admin-table-heading">
+      <div><p class="admin-kicker">Seguridad</p><h2>Eventos recientes</h2></div>
+      <input class="search-input table-search" type="search" placeholder="Buscar evento" aria-label="Buscar evento" />
+    </div>
+    <div class="admin-table-inner" tabindex="0">
+      <table>
+        <thead><tr><th>Fecha</th><th>Actor</th><th>Acción</th><th>Entidad</th><th>ID</th><th>IP</th></tr></thead>
+        <tbody>{logs.map((log) => <tr><td data-label="Fecha">{log.fecha_creacion}</td><td data-label="Actor">{log.actor || "Sistema"}</td><td data-label="Acción">{log.accion}</td><td data-label="Entidad">{log.entidad}</td><td data-label="ID">{log.entidad_id}</td><td data-label="IP">{log.ip_address || "-"}</td></tr>)}</tbody>
+      </table>
+    </div>
+  </div>
+</AdminLayout>

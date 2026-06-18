@@ -25,7 +25,7 @@ const maxRevenue = Math.max(1, ...revenueTrend.map((item) => Number(item.revenue
       <h2>Control de tienda, membresías e inventario</h2>
     </div>
     <div class="admin-command-actions">
-      <a class="btn" href="/admin/products"><i class="bx bx-plus"></i> Producto</a>
+      <a class="btn" href="/admin/products?create=1"><i class="bx bx-plus"></i> Producto</a>
       <a class="btn btn-secondary" href="/admin/inventory"><i class="bx bx-package"></i> Inventario</a>
     </div>
   </section>
@@ -46,7 +46,7 @@ const maxRevenue = Math.max(1, ...revenueTrend.map((item) => Number(item.revenue
         {revenueTrend.length ? revenueTrend.map((item) => {
           const value = Number(item.revenue || 0);
           const pct = Math.max(6, Math.round((value / maxRevenue) * 100));
-          return <div class="bar-column" style={`--bar:${pct}%`}><span>{money(value)}</span><i></i><small>{item.month}</small></div>;
+          return <div class="bar-column" style={"--bar:" + pct + "%"}><span>{money(value)}</span><i></i><small>{item.month}</small></div>;
         }) : <p class="admin-empty">Sin ingresos registrados.</p>}
       </div>
     </article>
@@ -60,7 +60,12 @@ const maxRevenue = Math.max(1, ...revenueTrend.map((item) => Number(item.revenue
   </section>
 
   <div class="admin-table">
-    <h2>Actividad reciente</h2>
-    <table><thead><tr><th>Usuario</th><th>Actividad</th><th>Fecha</th></tr></thead><tbody>{recent.map((item)=><tr><td>{item.username}</td><td>{item.action}</td><td>{item.date}</td></tr>)}</tbody></table>
+    <div class="admin-table-heading"><div><p class="admin-kicker">Actividad</p><h2>Actividad reciente</h2></div></div>
+    <div class="admin-table-inner" tabindex="0">
+      <table>
+        <thead><tr><th>Usuario</th><th>Actividad</th><th>Fecha</th></tr></thead>
+        <tbody>{recent.map((item) => <tr><td data-label="Usuario">{item.username}</td><td data-label="Actividad">{item.action}</td><td data-label="Fecha">{item.date}</td></tr>)}</tbody>
+      </table>
+    </div>
   </div>
 </AdminLayout>

@@ -1,5 +1,58 @@
 ---
-import { readdir, stat } from "node:fs/promises"; import { join } from "node:path"; import AdminLayout from "@/components/AdminLayout.astro";
-const root=join(process.cwd(),"public","assets");const groups=["products","services","videos"];const files=(await Promise.all(groups.map(async(group)=>Promise.all((await readdir(join(root,group))).map(async(name)=>({group,name,size:(await stat(join(root,group,name))).size})))))).flat();
+import { readdir, stat } from "node:fs/promises";
+import { join } from "node:path";
+import AdminLayout from "@/components/AdminLayout.astro";
+
+const root = join(process.cwd(), "public", "assets");
+const groups = ["products", "services", "videos"];
+const files = (await Promise.all(groups.map(async (group) => Promise.all((await readdir(join(root, group))).map(async (name) => ({ group, name, size: (await stat(join(root, group, name))).size })))))).flat();
 ---
-<AdminLayout title="Gestión de Multimedia"><div class="admin-form"><h2>Subir archivos</h2><form method="POST" action="/api/admin/media" enctype="multipart/form-data"><select name="group" required>{groups.map((group)=><option value={group}>{group}</option>)}</select><input type="file" name="files" multiple required/><button class="btn">Subir</button></form></div><div class="admin-table"><table><thead><tr><th>Tipo</th><th>Archivo</th><th>Tamaño</th><th>Acción</th></tr></thead><tbody>{files.map((file)=><tr><td>{file.group}</td><td>/assets/{file.group}/{file.name}</td><td>{Math.round(file.size/1024)} KB</td><td><form method="POST" action="/api/admin/media"><input type="hidden" name="path" value={`${file.group}/${file.name}`}/><input type="hidden" name="action" value="delete"/><button class="btn">Eliminar</button></form></td></tr>)}</tbody></table></div></AdminLayout>
+<AdminLayout title="Gestión de Multimedia">
+  <section class="admin-toolbar" aria-label="Acciones multimedia">
+    <div>
+      <p class="admin-kicker">Archivos</p>
+      <h2>{files.length} recursos</h2>
+    </div>
+    <button class="btn" type="button" data-modal="media-upload-modal"><i class="bx bx-upload"></i> Subir archivos</button>
+  </section>
+
+  <div class="modal admin-modal" id="media-upload-modal" aria-hidden="true">
+    <div class="modal-content admin-modal-content" role="dialog" aria-modal="true" aria-labelledby="media-upload-title">
+      <div class="modal-header">
+        <div>
+          <p class="admin-kicker">Multimedia</p>
+          <h3 id="media-upload-title">Subir archivos</h3>
+        </div>
+        <button class="close" type="button" aria-label="Cerrar ventana">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form class="admin-form modal-form" method="POST" action="/api/admin/media" enctype="multipart/form-data">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Tipo</label>
+              <select name="group" required>{groups.map((group) => <option value={group}>{group}</option>)}</select>
+            </div>
+            <div class="form-group span-2">
+              <label>Archivos</label>
+              <input type="file" name="files" multiple required />
+            </div>
+          </div>
+          <div class="form-actions"><button class="btn" type="submit">Subir archivos</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-table">
+    <div class="admin-table-heading">
+      <div><p class="admin-kicker">Biblioteca</p><h2>Archivos disponibles</h2></div>
+      <input class="search-input table-search" type="search" placeholder="Buscar archivo" aria-label="Buscar archivo" />
+    </div>
+    <div class="admin-table-inner" tabindex="0">
+      <table>
+        <thead><tr><th>Tipo</th><th>Archivo</th><th>Tamaño</th><th>Acción</th></tr></thead>
+        <tbody>{files.map((file) => <tr><td data-label="Tipo">{file.group}</td><td data-label="Archivo" class="truncate-cell">/assets/{file.group}/{file.name}</td><td data-label="Tamaño">{Math.round(file.size / 1024)} KB</td><td data-label="Acción"><form method="POST" action="/api/admin/media"><input type="hidden" name="path" value={file.group + "/" + file.name} /><input type="hidden" name="action" value="delete" /><button class="btn btn-danger" type="submit" onclick="return confirm('¿Confirmas la eliminación?')">Eliminar</button></form></td></tr>)}</tbody>
+      </table>
+    </div>
+  </div>
+</AdminLayout>

@@ -1,5 +1,217 @@
 ---
-import AdminLayout from "@/components/AdminLayout.astro"; import { resources } from "@/lib/admin"; import { rows } from "@/lib/db";
-const name=Astro.params.resource as keyof typeof resources;const config=resources[name];if(!config)return Astro.redirect("/admin");const records=await rows<any>(config.list);const editId=Number(Astro.url.searchParams.get("edit")||0);const record=records.find((r)=>Number(r[config.id])===editId);
+import { readdir } from "node:fs/promises";
+import { join } from "node:path";
+import AdminLayout from "@/components/AdminLayout.astro";
+import { resources } from "@/lib/admin";
+import { rows } from "@/lib/db";
+
+const name = Astro.params.resource as keyof typeof resources;
+const config = resources[name];
+if (!config) return Astro.redirect("/admin");
+
+const records = await rows<any>(config.list);
+const editId = Number(Astro.url.searchParams.get("edit") || 0);
+const record = records.find((item) => Number(item[config.id]) === editId);
+const createOpen = Astro.url.searchParams.get("create") === "1";
+const columns = Object.keys(records[0] || {});
+const optionalCreateFields = new Set(["precio_anterior", "telefono", "apellido", "id_categoria", "url_imagen", "url_video"]);
+const optionalEditFields = new Set([...optionalCreateFields, "hash_contraseña"]);
+const booleanFields = new Set(["esta_activo", "es_destacado"]);
+const textareaFields = new Set(["beneficios", "direccion"]);
+const numericFields = new Set(["precio", "precio_anterior", "cantidad_stock", "id_categoria", "duracion_minutos", "duracion_dias"]);
+const extensionGroups = {
+  image: new Set([".jpg", ".jpeg", ".png", ".webp", ".gif"]),
+  video: new Set([".mp4", ".webm"]),
+};
+const assetFields: Record<string, { directory: string; kind: "image" | "video"; emptyLabel: string }> =
+  name === "products" ? {
+    url_imagen: { directory: "products", kind: "image", emptyLabel: "Sin imagen" },
+  } : name === "services" ? {
+    url_imagen: { directory: "services", kind: "image", emptyLabel: "Sin imagen" },
+    url_video: { directory: "videos", kind: "video", emptyLabel: "Sin video" },
+  } : {};
+const assetOptionsByField = Object.fromEntries(await Promise.all(Object.entries(assetFields).map(async ([field, meta]) => {
+  const files = await readdir(join(process.cwd(), "public", "assets", meta.directory)).catch(() => []);
+  const options = files
+    .filter((file) => extensionGroups[meta.kind].has(file.slice(file.lastIndexOf(".")).toLowerCase()))
+    .sort((a, b) => a.localeCompare(b))
+    .map((file) => "assets/" + meta.directory + "/" + file);
+  return [field, options];
+})));
+const labelFor = (field: string) => field === "hash_contraseña" ? "contraseña" : field.replaceAll("_", " ");
+const inputTypeFor = (field: string) => field === "hash_contraseña" ? "password" : field === "correo" ? "email" : numericFields.has(field) ? "number" : "text";
+const emptyValue = (value: unknown) => String(value ?? "").slice(0, 80);
+const mediaSrc = (value: unknown) => {
+  const path = String(value ?? "").trim();
+  return path ? (path.startsWith("/") ? path : "/" + path) : "";
+};
+const mediaName = (value: unknown) => String(value ?? "").split("/").pop() || "Sin archivo";
+const optionsForField = (field: string, currentValue?: unknown): string[] => {
+  const options = (assetOptionsByField[field] ?? []) as string[];
+  const current = String(currentValue ?? "").trim();
+  return current && !options.includes(current) ? [current, ...options] : options;
+};
+const isAssetField = (field: string) => Boolean(assetFields[field]);
+const assetSpanClass = (field: string) => isAssetField(field) ? "span-2" : "";
 ---
-<AdminLayout title={config.title}><div class="admin-form"><h2>{record?"Editar":"Agregar"} registro</h2><form method="POST" action="/api/admin/resource"><input type="hidden" name="resource" value={name}/><input type="hidden" name="id" value={record?.[config.id]||""}/><div class="form-grid">{config.fields.map((field)=><div class="form-group"><label>{field.replaceAll("_"," ")}</label>{field.includes("descripcion")||field==="beneficios"||field==="direccion"?<textarea name={field} required>{record?.[field]??""}</textarea>:field==="esta_activo"||field==="es_destacado"?<select name={field}><option value="1" selected={record?.[field]!==0}>Sí</option><option value="0" selected={record?.[field]===0}>No</option></select>:<input name={field} value={record?.[field]??""} required={!["precio_anterior","telefono","apellido","id_categoria","url_imagen","url_video"].includes(field)} />}</div>)}</div><button class="btn">{record?"Actualizar":"Crear"}</button></form></div><div class="admin-table"><table><thead><tr>{Object.keys(records[0]||{}).map((key)=><th>{key}</th>)}<th>Acciones</th></tr></thead><tbody>{records.map((item)=><tr>{Object.values(item).map((value)=><td>{String(value??"").slice(0,80)}</td>)}<td><a class="btn btn-secondary" href={`/admin/${name}?edit=${item[config.id]}`}>Editar</a><form method="POST" action="/api/admin/resource"><input type="hidden" name="resource" value={name}/><input type="hidden" name="id" value={item[config.id]}/><input type="hidden" name="action" value="delete"/><button class="btn" onclick="return confirm('¿Confirmas la eliminación?')">Eliminar</button></form></td></tr>)}</tbody></table></div></AdminLayout>
+<AdminLayout title={config.title}>
+  <section class="admin-toolbar" aria-label="Acciones de gestión">
+    <div>
+      <p class="admin-kicker">Registros</p>
+      <h2>{records.length} elementos</h2>
+    </div>
+    <a class="btn" href={"/admin/" + name + "?create=1"} data-modal="create-record-modal"><i class="bx bx-plus"></i> Nuevo registro</a>
+  </section>
+
+  <div class="modal admin-modal" id="create-record-modal" data-open-modal={createOpen ? "true" : undefined} aria-hidden={createOpen ? "false" : "true"}>
+    <div class="modal-content admin-modal-content" role="dialog" aria-modal="true" aria-labelledby="create-record-title">
+      <div class="modal-header">
+        <div>
+          <p class="admin-kicker">Crear</p>
+          <h3 id="create-record-title">Nuevo registro</h3>
+        </div>
+        <button class="close" type="button" aria-label="Cerrar ventana">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form class="admin-form modal-form" method="POST" action="/api/admin/resource">
+          <input type="hidden" name="resource" value={name} />
+          <input type="hidden" name="id" value="" />
+          <div class="form-grid">
+            {config.fields.map((field) => (
+              <div class={"form-group " + assetSpanClass(field)}>
+                <label>{labelFor(field)}</label>
+                {isAssetField(field) ? (
+                  <div class="admin-media-picker">
+                    <select name={field} data-media-select data-media-kind={assetFields[field].kind} data-empty-label={assetFields[field].emptyLabel}>
+                      <option value="">{assetFields[field].emptyLabel}</option>
+                      {optionsForField(field).map((path) => <option value={path}>{mediaName(path)}</option>)}
+                    </select>
+                    <div class={"admin-media-preview " + assetFields[field].kind} data-media-preview aria-live="polite">
+                      <span>{assetFields[field].emptyLabel}</span>
+                    </div>
+                  </div>
+                ) : textareaFields.has(field) || field.includes("descripcion") ? (
+                  <textarea name={field} required={!optionalCreateFields.has(field)}></textarea>
+                ) : booleanFields.has(field) ? (
+                  <select name={field}>
+                    <option value="1" selected>Sí</option>
+                    <option value="0">No</option>
+                  </select>
+                ) : field === "rol" ? (
+                  <select name={field} required>
+                    <option value="usuario" selected>Usuario</option>
+                    <option value="administrador">Administrador</option>
+                  </select>
+                ) : (
+                  <input type={inputTypeFor(field)} name={field} required={!optionalCreateFields.has(field)} />
+                )}
+              </div>
+            ))}
+          </div>
+          <div class="form-actions"><button class="btn" type="submit">Crear registro</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {record && (
+    <div class="modal admin-modal" id="edit-record-modal" data-open-modal="true" aria-hidden="false">
+      <div class="modal-content admin-modal-content" role="dialog" aria-modal="true" aria-labelledby="edit-record-title">
+        <div class="modal-header">
+          <div>
+            <p class="admin-kicker">Editar</p>
+            <h3 id="edit-record-title">Actualizar registro</h3>
+          </div>
+          <a class="close" href={"/admin/" + name} aria-label="Cerrar ventana">&times;</a>
+        </div>
+        <div class="modal-body">
+          <form class="admin-form modal-form" method="POST" action="/api/admin/resource">
+            <input type="hidden" name="resource" value={name} />
+            <input type="hidden" name="id" value={record[config.id]} />
+            <div class="form-grid">
+              {config.fields.map((field) => (
+                <div class={"form-group " + assetSpanClass(field)}>
+                  <label>{labelFor(field)}</label>
+                  {isAssetField(field) ? (
+                    <div class="admin-media-picker">
+                      <select name={field} data-media-select data-media-kind={assetFields[field].kind} data-empty-label={assetFields[field].emptyLabel}>
+                        <option value="" selected={!record[field]}>{assetFields[field].emptyLabel}</option>
+                        {optionsForField(field, record[field]).map((path) => <option value={path} selected={record[field] === path}>{mediaName(path)}</option>)}
+                      </select>
+                      <div class={"admin-media-preview " + assetFields[field].kind} data-media-preview aria-live="polite">
+                        {record[field] ? (
+                          assetFields[field].kind === "video" ? <video src={mediaSrc(record[field])} muted controls preload="metadata"></video> : <img src={mediaSrc(record[field])} alt={"Vista previa de " + mediaName(record[field])} loading="lazy" />
+                        ) : <span>{assetFields[field].emptyLabel}</span>}
+                      </div>
+                    </div>
+                  ) : textareaFields.has(field) || field.includes("descripcion") ? (
+                    <textarea name={field} required={!optionalEditFields.has(field)}>{record[field] ?? ""}</textarea>
+                  ) : booleanFields.has(field) ? (
+                    <select name={field}>
+                      <option value="1" selected={record[field] !== 0}>Sí</option>
+                      <option value="0" selected={record[field] === 0}>No</option>
+                    </select>
+                  ) : field === "rol" ? (
+                    <select name={field} required>
+                      <option value="usuario" selected={(record[field] ?? "usuario") === "usuario"}>Usuario</option>
+                      <option value="administrador" selected={record[field] === "administrador"}>Administrador</option>
+                    </select>
+                  ) : (
+                    <input type={inputTypeFor(field)} name={field} value={record[field] ?? ""} required={!optionalEditFields.has(field)} placeholder={field === "hash_contraseña" ? "Dejar vacía para conservarla" : undefined} />
+                  )}
+                </div>
+              ))}
+            </div>
+            <div class="form-actions"><button class="btn" type="submit">Actualizar registro</button></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  )}
+
+  <div class="admin-table">
+    <div class="admin-table-heading">
+      <div>
+        <p class="admin-kicker">Información</p>
+        <h2>{config.title}</h2>
+      </div>
+      <input class="search-input table-search" type="search" placeholder="Buscar en tabla" aria-label="Buscar en tabla" />
+    </div>
+    <div class="admin-table-inner" tabindex="0">
+      <table>
+        <thead>
+          <tr>
+            {columns.map((key) => <th>{labelFor(key)}</th>)}
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {records.length ? records.map((item) => (
+            <tr>
+              {columns.map((key) => (
+                <td data-label={labelFor(key)}>
+                  {isAssetField(key) ? (
+                    item[key] ? <div class="admin-table-media"><span class="admin-table-media-frame">{assetFields[key].kind === "video" ? <video src={mediaSrc(item[key])} muted preload="metadata"></video> : <img src={mediaSrc(item[key])} alt={"Archivo de " + (item.nombre || "registro")} loading="lazy" />}</span><span>{mediaName(item[key])}</span></div> : <span class="text-muted">{assetFields[key].emptyLabel}</span>
+                  ) : emptyValue(item[key])}
+                </td>
+              ))}
+              <td data-label="Acciones">
+                <div class="table-actions">
+                  <a class="btn btn-secondary" href={"/admin/" + name + "?edit=" + item[config.id]}>Editar</a>
+                  <form method="POST" action="/api/admin/resource">
+                    <input type="hidden" name="resource" value={name} />
+                    <input type="hidden" name="id" value={item[config.id]} />
+                    <input type="hidden" name="action" value="delete" />
+                    <button class="btn btn-danger" type="submit" onclick="return confirm('¿Confirmas la eliminación?')">Eliminar</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          )) : (
+            <tr><td colspan={columns.length + 1}>Sin registros todavía.</td></tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</AdminLayout>

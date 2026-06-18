@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initCharts();
     initMediaUpload();
     initSearchAndFilter();
+    initMediaPickers();
     // Mostrar/ocultar contraseña en el formulario de usuario
     const passwordInput = document.getElementById('password');
     const showPasswordCheckbox = document.getElementById('show-password');
@@ -39,43 +40,108 @@ function initMobileMenu() {
 }
 
 // Modales
+function initMediaPickers() {
+    document.querySelectorAll('[data-media-select]').forEach(select => {
+        const picker = select.closest('.admin-media-picker');
+        const preview = picker ? picker.querySelector('[data-media-preview]') : null;
+        if (!preview) return;
+
+        const renderPreview = () => {
+            const value = select.value.trim();
+            const kind = select.getAttribute('data-media-kind') || 'image';
+            const emptyLabel = select.getAttribute('data-empty-label') || 'Sin archivo';
+            preview.innerHTML = '';
+            preview.classList.toggle('video', kind === 'video');
+            preview.classList.toggle('image', kind !== 'video');
+
+            if (!value) {
+                const empty = document.createElement('span');
+                empty.textContent = emptyLabel;
+                preview.appendChild(empty);
+                return;
+            }
+
+            const src = value.startsWith('/') ? value : '/' + value;
+            if (kind === 'video') {
+                const video = document.createElement('video');
+                video.src = src;
+                video.muted = true;
+                video.controls = true;
+                video.preload = 'metadata';
+                preview.appendChild(video);
+                return;
+            }
+
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = 'Vista previa de ' + value.split('/').pop();
+            img.loading = 'lazy';
+            preview.appendChild(img);
+        };
+
+        select.addEventListener('change', renderPreview);
+        renderPreview();
+    });
+}
+
 function initModals() {
-    const modals = document.querySelectorAll('.modal');
     const modalTriggers = document.querySelectorAll('[data-modal]');
-    const closeButtons = document.querySelectorAll('.close, .close-modal');
-    
-    // Abrir modales
+    let activeModal = null;
+
+    function openModal(modal) {
+        if (!modal) return;
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('modal-open');
+        activeModal = modal;
+
+        const focusTarget = modal.querySelector('input:not([type="hidden"]), select, textarea, button, a[href]');
+        if (focusTarget) setTimeout(() => focusTarget.focus(), 30);
+    }
+
+    function closeModal(modal) {
+        if (!modal) return;
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        if (!document.querySelector('.modal.is-open')) {
+            document.body.classList.remove('modal-open');
+            activeModal = null;
+        }
+    }
+
     modalTriggers.forEach(trigger => {
         trigger.addEventListener('click', function(e) {
-            e.preventDefault();
             const modalId = this.getAttribute('data-modal');
             const modal = document.getElementById(modalId);
             if (modal) {
-                modal.style.display = 'block';
-                document.body.style.overflow = 'hidden';
+                e.preventDefault();
+                openModal(modal);
             }
         });
     });
-    
-    // Cerrar modales
-    closeButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const modal = this.closest('.modal');
-            if (modal) {
-                modal.style.display = 'none';
-                document.body.style.overflow = 'auto';
+
+    document.querySelectorAll('[data-open-modal="true"]').forEach(openModal);
+
+    document.addEventListener('click', function(e) {
+        const closeButton = e.target.closest('.close, .close-modal, [data-close-modal]');
+        if (closeButton) {
+            const modal = closeButton.closest('.modal');
+            if (modal && closeButton.tagName !== 'A') {
+                e.preventDefault();
+                closeModal(modal);
             }
-        });
+            return;
+        }
+
+        if (e.target.classList && e.target.classList.contains('modal')) {
+            closeModal(e.target);
+        }
     });
-    
-    // Cerrar modal al hacer clic fuera
-    modals.forEach(modal => {
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                this.style.display = 'none';
-                document.body.style.overflow = 'auto';
-            }
-        });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && activeModal) {
+            closeModal(activeModal);
+        }
     });
 }
 
@@ -110,7 +176,8 @@ function initTables() {
         });
         
         // Búsqueda en tabla
-        const searchInput = table.parentElement.querySelector('.table-search');
+        const tableCard = table.closest('.admin-table');
+        const searchInput = tableCard ? tableCard.querySelector('.table-search') : null;
         if (searchInput) {
             searchInput.addEventListener('input', function() {
                 const searchTerm = this.value.toLowerCase();
@@ -306,7 +373,7 @@ function validateField(field) {
                 }
                 break;
             case 'number':
-                if (isNaN(value) || value < 0) {
+                if (isNaN(value) || (!field.hasAttribute('data-allow-negative') && value < 0)) {
                     showFieldError(field, 'Número inválido');
                     return false;
                 }

@@ -1,5 +1,70 @@
 ---
-import AdminLayout from "@/components/AdminLayout.astro";import { rows } from "@/lib/db";
-const products=await rows<any>("SELECT id_producto,sku,nombre,cantidad_stock,stock_reservado,umbral_stock_bajo,cantidad_stock-stock_reservado disponible FROM producto WHERE esta_activo=1 ORDER BY disponible ASC");const movements=await rows<any>("SELECT m.*,p.nombre producto FROM movimiento_inventario m JOIN producto p ON p.id_producto=m.id_producto ORDER BY m.fecha_creacion DESC LIMIT 100");
+import AdminLayout from "@/components/AdminLayout.astro";
+import { rows } from "@/lib/db";
+
+const products = await rows<any>("SELECT id_producto,sku,nombre,cantidad_stock,stock_reservado,umbral_stock_bajo,cantidad_stock-stock_reservado disponible FROM producto WHERE esta_activo=1 ORDER BY disponible ASC");
+const movements = await rows<any>("SELECT m.*,p.nombre producto FROM movimiento_inventario m JOIN producto p ON p.id_producto=m.id_producto ORDER BY m.fecha_creacion DESC LIMIT 100");
 ---
-<AdminLayout title="Inventario"><div class="admin-form"><h2>Ajustar inventario</h2><form method="POST" action="/api/admin/inventory"><select name="productId" required>{products.map(p=><option value={p.id_producto}>{p.nombre}</option>)}</select><input type="number" name="quantity" required placeholder="Cantidad positiva o negativa"/><input name="note" required placeholder="Motivo del ajuste"/><button class="btn">Aplicar ajuste</button></form></div><div class="admin-table"><h2>Existencias</h2><table><thead><tr><th>SKU</th><th>Producto</th><th>Stock</th><th>Reservado</th><th>Disponible</th><th>Alerta</th></tr></thead><tbody>{products.map(p=><tr><td>{p.sku||"-"}</td><td>{p.nombre}</td><td>{p.cantidad_stock}</td><td>{p.stock_reservado}</td><td>{p.disponible}</td><td>{p.disponible<=p.umbral_stock_bajo?"Stock bajo":"OK"}</td></tr>)}</tbody></table></div><div class="admin-table"><h2>Movimientos recientes</h2><table><thead><tr><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Antes</th><th>Después</th><th>Fecha</th></tr></thead><tbody>{movements.map(m=><tr><td>{m.producto}</td><td>{m.tipo}</td><td>{m.cantidad}</td><td>{m.stock_anterior}</td><td>{m.stock_nuevo}</td><td>{m.fecha_creacion}</td></tr>)}</tbody></table></div></AdminLayout>
+<AdminLayout title="Inventario">
+  <section class="admin-toolbar" aria-label="Acciones de inventario">
+    <div>
+      <p class="admin-kicker">Stock</p>
+      <h2>{products.length} productos activos</h2>
+    </div>
+    <button class="btn" type="button" data-modal="inventory-adjust-modal"><i class="bx bx-plus"></i> Ajustar inventario</button>
+  </section>
+
+  <div class="modal admin-modal" id="inventory-adjust-modal" aria-hidden="true">
+    <div class="modal-content admin-modal-content" role="dialog" aria-modal="true" aria-labelledby="inventory-adjust-title">
+      <div class="modal-header">
+        <div>
+          <p class="admin-kicker">Inventario</p>
+          <h3 id="inventory-adjust-title">Ajustar inventario</h3>
+        </div>
+        <button class="close" type="button" aria-label="Cerrar ventana">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form class="admin-form modal-form" method="POST" action="/api/admin/inventory">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Producto</label>
+              <select name="productId" required>{products.map((p) => <option value={p.id_producto}>{p.nombre}</option>)}</select>
+            </div>
+            <div class="form-group">
+              <label>Cantidad</label>
+              <input type="number" name="quantity" required data-allow-negative="true" placeholder="Ej. 8 o -3" />
+            </div>
+            <div class="form-group span-2">
+              <label>Motivo</label>
+              <input name="note" required placeholder="Motivo del ajuste" />
+            </div>
+          </div>
+          <div class="form-actions"><button class="btn" type="submit">Aplicar ajuste</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-table">
+    <div class="admin-table-heading">
+      <div><p class="admin-kicker">Existencias</p><h2>Productos en inventario</h2></div>
+      <input class="search-input table-search" type="search" placeholder="Buscar producto" aria-label="Buscar producto" />
+    </div>
+    <div class="admin-table-inner" tabindex="0">
+      <table>
+        <thead><tr><th>SKU</th><th>Producto</th><th>Stock</th><th>Reservado</th><th>Disponible</th><th>Alerta</th></tr></thead>
+        <tbody>{products.map((p) => <tr><td data-label="SKU">{p.sku || "-"}</td><td data-label="Producto">{p.nombre}</td><td data-label="Stock">{p.cantidad_stock}</td><td data-label="Reservado">{p.stock_reservado}</td><td data-label="Disponible">{p.disponible}</td><td data-label="Alerta"><span class={"status-pill " + (p.disponible <= p.umbral_stock_bajo ? "danger" : "OK")}>{p.disponible <= p.umbral_stock_bajo ? "Stock bajo" : "OK"}</span></td></tr>)}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="admin-table">
+    <div class="admin-table-heading"><div><p class="admin-kicker">Historial</p><h2>Movimientos recientes</h2></div></div>
+    <div class="admin-table-inner" tabindex="0">
+      <table>
+        <thead><tr><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Antes</th><th>Después</th><th>Fecha</th></tr></thead>
+        <tbody>{movements.map((m) => <tr><td data-label="Producto">{m.producto}</td><td data-label="Tipo">{m.tipo}</td><td data-label="Cantidad">{m.cantidad}</td><td data-label="Antes">{m.stock_anterior}</td><td data-label="Después">{m.stock_nuevo}</td><td data-label="Fecha">{m.fecha_creacion}</td></tr>)}</tbody>
+      </table>
+    </div>
+  </div>
+</AdminLayout>

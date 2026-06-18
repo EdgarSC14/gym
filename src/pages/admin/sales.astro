@@ -26,7 +26,7 @@ const maxProductUnits = Math.max(1, ...topProducts.map((item) => Number(item.uni
         {monthly.length ? monthly.map((item) => {
           const value = Number(item.revenue || 0);
           const pct = Math.max(6, Math.round((value / maxRevenue) * 100));
-          return <div class="bar-column" style={`--bar:${pct}%`}><span>{money(value)}</span><i></i><small>{item.month}</small></div>;
+          return <div class="bar-column" style={"--bar:" + pct + "%"}><span>{money(value)}</span><i></i><small>{item.month}</small></div>;
         }) : <p class="admin-empty">Sin pagos registrados.</p>}
       </div>
     </article>
@@ -34,7 +34,7 @@ const maxProductUnits = Math.max(1, ...topProducts.map((item) => Number(item.uni
     <article class="admin-panel">
       <div class="panel-heading"><div><p class="admin-kicker">Estado</p><h2>Pagos por resultado</h2></div></div>
       <div class="status-stack">
-        {statusRows.map((item) => <div><span class={`status-pill ${item.estado}`}>{item.estado}</span><strong>{item.total}</strong></div>)}
+        {statusRows.map((item) => <div><span class={"status-pill " + item.estado}>{item.estado}</span><strong>{item.total}</strong></div>)}
       </div>
     </article>
 
@@ -43,14 +43,22 @@ const maxProductUnits = Math.max(1, ...topProducts.map((item) => Number(item.uni
       <div class="rank-list">
         {topProducts.map((item, index) => {
           const pct = Math.max(4, Math.round((Number(item.unidades || 0) / maxProductUnits) * 100));
-          return <div class="rank-row" style={`--rank:${pct}%`}><span>{index + 1}</span><strong>{item.nombre || "Sin nombre"}</strong><i></i><em>{item.unidades} uds.</em></div>;
+          return <div class="rank-row" style={"--rank:" + pct + "%"}><span>{index + 1}</span><strong>{item.nombre || "Sin nombre"}</strong><i></i><em>{item.unidades} uds.</em></div>;
         })}
       </div>
     </article>
   </section>
 
   <div class="admin-table">
-    <h2>Pagos recientes</h2>
-    <table><thead><tr><th>ID</th><th>Usuario</th><th>Monto</th><th>Método</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>{payments.map((p)=><tr><td>{p.id_pago}</td><td>{p.usuario||"-"}</td><td>{money(p.monto)}</td><td>{p.metodo_pago}</td><td><span class={`status-pill ${p.estado}`}>{p.estado}</span></td><td>{p.fecha_pago}</td></tr>)}</tbody></table>
+    <div class="admin-table-heading">
+      <div><p class="admin-kicker">Pagos</p><h2>Pagos recientes</h2></div>
+      <input class="search-input table-search" type="search" placeholder="Buscar pago" aria-label="Buscar pago" />
+    </div>
+    <div class="admin-table-inner" tabindex="0">
+      <table>
+        <thead><tr><th>ID</th><th>Usuario</th><th>Monto</th><th>Método</th><th>Estado</th><th>Fecha</th></tr></thead>
+        <tbody>{payments.map((p) => <tr><td data-label="ID">{p.id_pago}</td><td data-label="Usuario">{p.usuario || "-"}</td><td data-label="Monto">{money(p.monto)}</td><td data-label="Método">{p.metodo_pago}</td><td data-label="Estado"><span class={"status-pill " + p.estado}>{p.estado}</span></td><td data-label="Fecha">{p.fecha_pago}</td></tr>)}</tbody>
+      </table>
+    </div>
   </div>
 </AdminLayout>
